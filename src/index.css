@@ -1,0 +1,497 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #e8e8e8;
+  background: #111111;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  padding: 9px 14px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #222;
+  color: #eee;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2d2d2d;
+}
+
+.app {
+  min-height: 100vh;
+  padding: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.app-header,
+.shadow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.app-header h1,
+.shadow-header h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.shadow-header p {
+  margin: 6px 0 0;
+  color: #999;
+}
+
+.shadow-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shadow-header-row,
+.shadow-row {
+  display: grid;
+  grid-template-columns:
+    minmax(85px, 2fr) 25px 120px 120px 36px;
+
+  align-items: center;
+
+  padding: 8px 12px;
+}
+
+.shadow-header-row {
+  font-weight: bold;
+  border-bottom: 2px solid #666;
+}
+
+.shadow-row {
+  transition: background .15s;
+}
+
+.shadow-row:hover {
+  background: rgba(255, 255, 255, .08);
+}
+
+.shadow-view-button {
+  width: 28px;
+  height: 28px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  justify-self: center;
+
+  font-size: 16px;
+  line-height: 1;
+}
+
+.affinity-list {
+  max-width: 700px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.affinity-row {
+  display: flex;
+  align-items: center;
+
+  gap: 1rem;
+  padding: 14px 18px;
+  border-bottom: 1px solid #333;
+  background: #1b1b1b;
+}
+
+.affinity-row:last-child {
+  border-bottom: none;
+}
+
+.affinity {
+  color: inherit;
+}
+
+.affinity-weak {
+  color: #ff8a8a;
+}
+
+.affinity-resist {
+  color: #b2ceff;
+}
+
+.affinity-null {
+  color: #c08aff;
+}
+
+.affinity-reflect {
+  color: #ffcc66;
+}
+
+.affinity-drain {
+  color: #66d9a3;
+}
+
+.error {
+  color: #ff8080;
+}
+
+.editor {
+  max-width: 700px;
+}
+
+.editor h2 {
+  margin-top: 32px;
+}
+
+.editor h3 {
+  margin-top: 32px;
+}
+
+.editor>label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+
+.editor input,
+.editor textarea,
+.editor select {
+  padding: 10px 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #1b1b1b;
+  color: #eee;
+}
+
+.affinity-editor {
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.affinity-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid #333;
+  background: #1b1b1b;
+}
+
+.affinity-edit-row:last-child {
+  border-bottom: none;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.discovery-button {
+  border: 1px solid #444;
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.discovery-button.hidden {
+  background: #222;
+  color: #999;
+}
+
+.discovery-button.revealed {
+  background: #263d2e;
+  color: #8fe0a8;
+  border-color: #42684d;
+}
+
+.discovery-button:hover {
+  filter: brightness(1.2);
+}
+
+.skill-icon {
+  width: 90px;
+  height: auto;
+}
+
+.gm-layout {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 1rem;
+}
+
+.gm-library-panel,
+.gm-combat-panel {
+    height: 100vh;
+    min-height: 0;
+}
+
+.gm-library-panel {
+    display: flex;
+    flex-direction: column;
+    width: 409px;
+}
+
+.library-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.combatant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.combatant-header,
+.combatant-row {
+  display: grid;
+  grid-template-columns: 60px 1fr repeat(10, 50px) 80px 30px;
+  align-items: center;
+  gap: 4px;
+}
+
+.combatant-header {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.combatant-row {
+  padding: 0.25rem;
+}
+
+.combatant-init {
+  text-align: center;
+}
+
+.remove-button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+.initiative-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 1000;
+}
+
+.initiative-modal {
+  background: rgb(87, 1, 1);
+  padding: 2rem;
+  border-radius: 12px;
+  min-width: 300px;
+}
+
+.current-turn {
+  background: rgba(255, 215, 0, 0.2);
+  border-left: 4px solid gold;
+}
+
+.combatant-hp {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.affinity-cell {
+
+  position: relative;
+  isolation: isolate;
+
+  width: 55px;
+  height: 40px;
+
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  overflow: hidden;
+}
+
+.affinity-cell::before {
+
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 115%;
+
+  opacity: .35;
+
+  pointer-events: none;
+}
+
+.fire::before {
+  background-image: url("/skills/SkillFire.png");
+}
+
+.ice::before {
+  background-image: url("/skills/SkillIce.png");
+}
+
+.wind::before {
+  background-image: url("/skills/SkillWind.png");
+}
+
+.electric::before {
+  background-image: url("/skills/SkillElectric.png");
+}
+
+.psychic::before {
+  background-image: url("/skills/SkillPsychic.png");
+}
+
+.nuclear::before {
+  background-image: url("/skills/SkillNuclear.png");
+}
+
+.bless::before {
+  background-image: url("/skills/SkillBless.png");
+}
+
+.curse::before {
+  background-image: url("/skills/SkillCurse.png");
+}
+
+.melee::before {
+  background-image: url("/skills/SkillMelee.png");
+}
+
+.ranged::before {
+  background-image: url("/skills/SkillRanged.png");
+}
+
+.player-affinity-spacer {
+  grid-column: span 10;
+}
+
+.affinity-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 24px);
+  grid-template-rows: repeat(2, 20px);
+  border: 1px solid red;
+  border-radius: 2px;
+}
+
+.affinity-icon {
+  width: 24px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.affinity-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.affinity-icon.inactive {
+  opacity: 0.10;
+}
+
+.affinity-icon.active {
+  opacity: 1;
+}
+
+.shadow-name-button {
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: inherit;
+  width: 100%;
+  padding: 0;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.shadow-name-button:hover {
+  text-decoration: underline;
+}
+
+
+
+.shadow-level {
+  text-align: center;
+}
+
+.library-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  margin-bottom: 12px;
+
+  border-bottom: 1px solid #444;
+  flex-shrink: 0;
+}
+
+.library-tab {
+  border: none;
+  border-radius: 0;
+
+  background: transparent;
+
+  padding: 8px 0;
+
+  color: #aaa;
+
+  cursor: pointer;
+}
+
+.library-tab:hover {
+  background: rgba(255, 255, 255, .05);
+}
+
+.library-tab.active {
+  color: white;
+  border-bottom: 2px solid #fff;
+}
