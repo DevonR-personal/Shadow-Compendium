@@ -13,6 +13,15 @@ export async function getShadows() {
     armor,
     loot_item,
 
+    shadow_stats(
+        id,
+        shadow_id,
+        strength,
+        agility,
+        endurance,
+        magic
+    ),
+
     shadow_affinities(
         id,
         shadow_id,

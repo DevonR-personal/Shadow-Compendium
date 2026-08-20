@@ -1,5 +1,5 @@
 import { supabase } from "../supabase"
-import type { Affinity, AffinityValue } from "../types"
+import type { Affinity, AffinityElement, AffinityValue } from "../types"
 
 export async function getAffinities(
   shadowId: number
@@ -33,6 +33,20 @@ export async function updateAffinityDiscovery(
   }
 }
 
+export async function revealAffinityForShadow(
+    shadowId: number,
+    element: AffinityElement
+) {
+    const { error } = await supabase
+        .from("shadow_affinities")
+        .update({ discovered: true })
+        .eq("shadow_id", shadowId)
+        .eq("element", element)
+
+    if (error) {
+        throw error
+    }
+}
 
 export async function updateAffinityValue(
   affinityId: number,

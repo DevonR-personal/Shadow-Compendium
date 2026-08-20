@@ -6,10 +6,20 @@ export type Shadow = {
   armor: number | null
   arcana: string | null
   loot_item: string | null
+  shadow_stats: ShadowStats[]
   shadow_affinities: Affinity[]
   shadow_skills: {
     skills: Skill[]
   }[]
+}
+
+export type ShadowStats = {
+    id: number
+    shadow_id: number
+    strength: number
+    agility: number
+    endurance: number
+    magic: number
 }
 
 export type Affinity = {
@@ -45,16 +55,23 @@ export type AffinityValue =
   | "drain"
 
 export type Combatant = {
+  id: number
+  shadow_id: number | null
+  player_id: number | null
+  display_name: string
+  initiative: number | null
+  combatant_type: "shadow" | "player"
+  hp: number | null
+  max_hp: number | null
+  position: number
+  is_current_turn: boolean
+  downed: boolean
+  condition_id: number | null
+  condition: {
     id: number
-    shadow_id: number | null
-    player_id: number | null
-    display_name: string
-    initiative: number | null
-    combatant_type: "shadow" | "player"
-    hp: number | null
-    max_hp: number | null
-    position: number
-    is_current_turn: boolean
+    name: string
+    description: string
+  } | null
 }
 
 export type Player = {

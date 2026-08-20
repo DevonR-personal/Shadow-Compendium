@@ -32,17 +32,21 @@ export default function ShadowLibrary({
         return <p>No Shadows found.</p>
     }
 
+const sortedShadows = [...shadows].sort(
+    (a, b) => (a.max_hp ?? 0) - (b.max_hp ?? 0)
+)
+
     return (
         <div className="shadow-table">
             <div className="shadow-header-row">
                 <span>Name</span>
-                <span>TL</span>
-                <span>Offense</span>
-                <span>Weaknesses</span>
+                <span className="shadow-column-header">TL</span>
+                <span className="shadow-column-header">⚔︎</span>
+                <span className="shadow-column-header">🛡︎</span>
                 <span></span>
             </div>
 
-            {shadows.map((shadow) => (
+            {sortedShadows.map((shadow) => (
                 <ShadowRow
                     key={shadow.id}
                     shadow={shadow}

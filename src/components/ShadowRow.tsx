@@ -19,6 +19,7 @@ export default function ShadowRow({
 }: ShadowRowProps) {
     const offensiveAffinities =
         getOffensiveAffinities(shadow)
+            .filter((affinity) => affinity !== "almighty")
 
     const sortedOffensiveAffinities =
         sortAffinities(offensiveAffinities)
@@ -41,17 +42,31 @@ export default function ShadowRow({
                 {shadow.level}
             </span>
 
-            <AffinityMiniGrid
-                highlightedAffinities={
-                    sortedOffensiveAffinities
-                }
-            />
+            <div
+                className={`shadow-offensive-icons count-${sortedOffensiveAffinities.length}`}
+            >
+                {sortedOffensiveAffinities.map((affinity) => (
+                    <img
+                        key={affinity}
+                        src={`/icons/Icon_${affinity.charAt(0).toUpperCase() + affinity.slice(1)}.png`}
+                        alt={affinity}
+                        title={affinity}
+                    />
+                ))}
+            </div>
 
-            <AffinityMiniGrid
-                highlightedAffinities={
-                    weaknesses
-                }
-            />
+            <div
+                className={`shadow-defensive-icons count-${weaknesses.length}`}
+            >
+                {weaknesses.map((affinity) => (
+                    <img
+                        key={affinity}
+                        src={`/icons/Icon_${affinity.charAt(0).toUpperCase() + affinity.slice(1)}.png`}
+                        alt={affinity}
+                        title={affinity}
+                    />
+                ))}
+            </div>
 
             <button
                 type="button"

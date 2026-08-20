@@ -16,7 +16,10 @@ import {
     addCombatant,
     addPlayerCombatant,
     resetCombat,
+    nextTurn,
 } from "../services/combatants"
+import ShadowDetailsPanel from "./ShadowDetailsPanel"
+import { updateAffinityDiscovery } from "../services/affinities"
 
 type GMPageProps = {
     shadows: Shadow[]
@@ -42,6 +45,15 @@ async function handleAddCombatant(
         console.error(error)
     }
 }
+async function handleNextTurn() {
+    const error = await nextTurn()
+
+    if (error) {
+        console.error(error)
+    }
+}
+
+
 export default function GMPage({
     shadows,
     loading,
@@ -52,6 +64,8 @@ export default function GMPage({
     const [players, setPlayers] = useState<Player[]>([])
     const [libraryTab, setLibraryTab] =
         useState<"shadows" | "players">("shadows")
+    const [selectedShadow, setSelectedShadow] =
+        useState<Shadow | null>(null)
     const [showInitiativeWindow, setShowInitiativeWindow] = useState(false)
     const [playerRolls, setPlayerRolls] = useState<Record<number, number>>({})
     useEffect(() => {
@@ -121,12 +135,19 @@ export default function GMPage({
 
         // Roll initiative for enemies only
         for (const combatant of combatantsResult.data) {
-
             if (combatant.combatant_type !== "shadow") {
                 continue
             }
 
-            const initiative = rollDice(2, 6)
+            const shadow = shadows.find(
+                (shadow) => shadow.id === combatant.shadow_id
+            )
+
+            const agility =
+                shadow?.shadow_stats?.[0]?.agility ?? 0
+
+            const initiative =
+                rollDice(2, 6) + agility
 
             const error =
                 await updateCombatant(
@@ -217,6 +238,21 @@ export default function GMPage({
 
         setShowInitiativeWindow(false)
     }
+    async function handleAffinityToggle(
+        affinityId: number,
+        discovered: boolean
+    ) {
+        try {
+            await updateAffinityDiscovery(
+                affinityId,
+                discovered
+            )
+
+            await onRefreshShadows()
+        } catch (error) {
+            console.error(error)
+        }
+    }
     return (
         <main className="gm-layout">
 
@@ -293,26 +329,43 @@ export default function GMPage({
 
             <section className="gm-combat-panel">
 
-                <button
-                    type="button"
-                    onClick={startInitiative}
-                >
-                    Start Initiative
-                </button>
+                <nav className="gm-combat-controls">
+                    <button
+                        type="button"
+                        onClick={startInitiative}
+                    >
+                        Start Combat
+                    </button>
 
-                <button
-                    type="button"
-                    onClick={handleResetCombat}
-                >
-                    Reset Combat
-                </button>
+                    <button
+                        type="button"
+                        onClick={handleNextTurn}
+                    >
+                        Next Turn
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleResetCombat}
+                    >
+                        Reset Combat
+                    </button>
+                </nav>
 
                 <EncounterPage
                     shadows={shadows}
                     playerView={false}
                     onRefreshShadows={onRefreshShadows}
+                    onSelectShadow={setSelectedShadow}
                 />
 
+            </section>
+
+            <section className="gm-details-panel">
+                <ShadowDetailsPanel
+                    shadow={selectedShadow}
+                    onAffinityToggle={handleAffinityToggle}
+                />
             </section>
 
 

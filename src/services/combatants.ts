@@ -5,17 +5,12 @@ import type { Shadow, Combatant } from "../types"
 export async function getCombatants() {
     const { data, error } = await supabase
         .from("combatants")
-        .select(`
-            id,
-            shadow_id,
-            display_name,
-            initiative,
-            position,
-            combatant_type,
-            is_current_turn,
-            hp,
-            max_hp,
-            player_id
+        .select(`*,
+            condition:conditions (
+                id,
+                name,
+                description
+            )
         `)
         .order("position")
 
@@ -208,4 +203,34 @@ export async function resetCombat() {
         .neq("id", 0)
 
     return error
+}
+
+export async function updateCombatantDowned(
+    combatantId: number,
+    downed: boolean
+) {
+    const { error } = await supabase
+        .from("combatants")
+        .update({ downed })
+        .eq("id", combatantId)
+
+    if (error) {
+        throw error
+    }
+}
+
+export async function updateCombatantCondition(
+    combatantId: number,
+    conditionId: number | null
+) {
+    const { error } = await supabase
+        .from("combatants")
+        .update({
+            condition_id: conditionId,
+        })
+        .eq("id", combatantId)
+
+    if (error) {
+        throw error
+    }
 }

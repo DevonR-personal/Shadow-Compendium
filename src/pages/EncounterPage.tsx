@@ -3,28 +3,35 @@ import {
     getCombatants,
     removeCombatant,
     updateCombatant,
-    nextTurn,
+    updateCombatantDowned,
+    updateCombatantCondition
 } from "../services/combatants"
 import type { Combatant, Shadow } from "../types"
 import { supabase } from "../supabase"
 import AffinityGrid from "../components/AffinityGrid"
 import { AFFINITY_ORDER } from "../utils/affinities"
 import HealthBar from "../components/HealthBar"
+import { getConditions } from "../services/conditions"
 
 type EncounterPageProps = Readonly<{
     shadows: Shadow[]
     playerView: boolean
     onRefreshShadows: () => Promise<void>
+    onSelectShadow: (shadow: Shadow) => void
 }>
 
 export default function EncounterPage({
     shadows,
     playerView,
     onRefreshShadows,
+    onSelectShadow,
 }: Readonly<EncounterPageProps>) {
     const [combatants, setCombatants] = useState<Combatant[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [conditions, setConditions] = useState<
+        Awaited<ReturnType<typeof getConditions>>["data"]
+    >([])
 
     const shadowMap = new Map(
         shadows.map((shadow) => [
@@ -49,6 +56,15 @@ export default function EncounterPage({
 
     useEffect(() => {
         void loadData()
+
+        void getConditions().then((result) => {
+            if (result.error) {
+                console.error(result.error)
+                return
+            }
+
+            setConditions(result.data)
+        })
 
         const combatantsChannel = supabase
             .channel("combatants")
@@ -86,6 +102,30 @@ export default function EncounterPage({
         }
     }, [])
 
+    useEffect(() => {
+        const currentCombatant =
+            combatants.find(
+                (combatant) =>
+                    combatant.is_current_turn
+            )
+
+        if (
+            currentCombatant?.combatant_type !== "shadow" ||
+            currentCombatant.shadow_id === null
+        ) {
+            return
+        }
+
+        const shadow =
+            shadowMap.get(
+                currentCombatant.shadow_id
+            )
+
+        if (shadow) {
+            onSelectShadow?.(shadow)
+        }
+    }, [combatants, shadows, onSelectShadow])
+
     async function handleRemoveCombatant(
         id: number
     ) {
@@ -107,15 +147,6 @@ export default function EncounterPage({
                 {JSON.stringify(error, null, 2)}
             </pre>
         )
-    }
-
-    async function handleNextTurn() {
-        const error = await nextTurn()
-
-        if (error) {
-            console.error(error)
-            setError(error.message)
-        }
     }
 
     async function handleDamage(
@@ -158,27 +189,63 @@ export default function EncounterPage({
         }
     }
 
+    async function handleToggleDowned(
+        combatant: Combatant
+    ) {
+        try {
+            await updateCombatantDowned(
+                combatant.id,
+                !combatant.downed
+            )
+        } catch (error) {
+            console.error(error)
+
+            if (error instanceof Error) {
+                setError(error.message)
+            }
+        }
+    }
+
+    async function handleConditionChange(
+        combatant: Combatant,
+        value: string
+    ) {
+        const conditionId =
+            value === ""
+                ? null
+                : Number(value)
+
+        try {
+            await updateCombatantCondition(
+                combatant.id,
+                conditionId
+            )
+        } catch (error) {
+            console.error(error)
+
+            if (error instanceof Error) {
+                setError(error.message)
+            }
+        }
+    }
+
     return (
         <main className="app">
-            <h1>Current Encounter</h1>
-
-            {!playerView && (
-                <button
-                    type="button"
-                    onClick={handleNextTurn}
-                >
-                    Next Turn
-                </button>
-            )}
-
             {combatants.length === 0 ? (
                 <p>No combatants.</p>
             ) : (
                 <div className="combatant-list">
 
-                    <div className="combatant-header">
+                    <div
+                        className={
+                            playerView
+                                ? "combatant-header player-combatant-header"
+                                : "combatant-header gm-combatant-header"
+                        }
+                    >
                         <span>INIT</span>
                         <span>NAME</span>
+                        <span>STATUS</span>
                         {AFFINITY_ORDER.map((affinity) => (
                             <span
                                 key={affinity}
@@ -195,29 +262,114 @@ export default function EncounterPage({
 
                         return (
                             <div
-                                className={
+                                className={[
+                                    "combatant-row",
+                                    playerView
+                                        ? "player-combatant-row"
+                                        : "gm-combatant-row",
                                     combatant.is_current_turn
-                                        ? "combatant-row current-turn"
-                                        : "combatant-row"
-                                }
+                                        ? "current-turn"
+                                        : "",
+                                ].join(" ")}
                                 key={combatant.id}
                             >
                                 <span className="combatant-init">
                                     {combatant.initiative ?? 0}
                                 </span>
 
-                                <span>
-                                    {combatant.display_name}
+                                {combatant.combatant_type === "shadow" &&
+                                    shadow ? (
+                                    <button
+                                        type="button"
+                                        className="combatant-name-button"
+                                        onClick={() => onSelectShadow(shadow)}
+                                    >
+                                        {combatant.display_name}
+                                    </button>
+                                ) : (
+                                    <span>
+                                        {combatant.display_name}
+                                    </span>
+                                )}
+
+                                <span className="combatant-status">
+                                    {!playerView ? (
+                                        <div className="status-controls">
+
+                                            <select
+                                                className="condition-select"
+                                                value={
+                                                    combatant.condition_id ?? ""
+                                                }
+                                                onChange={(event) =>
+                                                    handleConditionChange(
+                                                        combatant,
+                                                        event.target.value
+                                                    )
+                                                }
+                                            >
+                                                <option value="">
+                                                    —
+                                                </option>
+
+                                                {conditions.map((condition) => (
+                                                    <option
+                                                        key={condition.id}
+                                                        value={condition.id}
+                                                    >
+                                                        {condition.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+
+                                            <button
+                                                type="button"
+                                                className={
+                                                    combatant.downed
+                                                        ? "downed-toggle active"
+                                                        : "downed-toggle"
+                                                }
+                                                onClick={() =>
+                                                    handleToggleDowned(combatant)
+                                                }
+                                            >
+                                                {combatant.downed
+                                                    ? "Downed!"
+                                                    : "Down"}
+                                            </button>
+
+                                        </div>
+                                    ) : (
+                                        <div className="status-display">
+
+                                            {combatant.downed && (
+                                                <span className="downed-label">
+                                                    DOWNED!
+                                                </span>
+                                            )}
+
+                                            {combatant.condition && (
+                                                <span className="condition-label">
+                                                    {combatant.condition.name}
+                                                </span>
+                                            )}
+
+                                        </div>
+                                    )}
                                 </span>
 
                                 {combatant.combatant_type === "shadow" &&
                                     shadow ? (
-                                    <AffinityGrid
-                                        affinities={
-                                            shadow.shadow_affinities
-                                        }
-                                        revealHiddenValues={!playerView}
-                                    />
+                                    playerView ? (
+                                        <AffinityGrid
+                                            affinities={
+                                                shadow.shadow_affinities
+                                            }
+                                            revealHiddenValues={false}
+                                        />
+                                    ) : (
+                                        <div className="gm-affinity-spacer" />
+                                    )
                                 ) : (
                                     <div className="player-affinity-spacer" />
                                 )}
