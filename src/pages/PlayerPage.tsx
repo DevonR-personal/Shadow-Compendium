@@ -15,6 +15,7 @@ export default function PlayerPage({
             shadows={shadows}
             playerView={true}
             onRefreshShadows={onRefreshShadows}
+            onSelectShadow={() => {}}
         />
     )
 }

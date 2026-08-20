@@ -4,7 +4,6 @@ import {
     getWeaknesses,
     sortAffinities,
 } from "../utils/affinities"
-import AffinityMiniGrid from "./AffinityMiniGrid"
 
 type ShadowRowProps = {
     readonly shadow: Shadow
