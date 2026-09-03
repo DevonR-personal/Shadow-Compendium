@@ -41,22 +41,39 @@ export function useShadowEditor({
         }
 
         const shadowId = selectedShadow.id
+        let cancelled = false
 
         async function loadAffinities() {
             setAffinitiesLoading(true)
 
             try {
                 setError(null)
-                setAffinities(await getAffinities(shadowId))
+                const result = await getAffinities(shadowId)
+
+                if (result.error) {
+                    throw result.error
+                }
+
+                if (!cancelled) {
+                    setAffinities(result.data)
+                }
             } catch (loadError) {
                 console.error(loadError)
-                setError(getErrorMessage(loadError))
+                if (!cancelled) {
+                    setError(getErrorMessage(loadError))
+                }
             } finally {
-                setAffinitiesLoading(false)
+                if (!cancelled) {
+                    setAffinitiesLoading(false)
+                }
             }
         }
 
         void loadAffinities()
+
+        return () => {
+            cancelled = true
+        }
     }, [selectedShadow, setError])
 
     function startEditing() {
@@ -94,7 +111,7 @@ export function useShadowEditor({
         setError(null)
 
         try {
-            const updatedShadow = await updateShadow(
+            const shadowResult = await updateShadow(
                 selectedShadow.id,
                 editName.trim(),
                 editLevel === "" ? null : Number(editLevel),
@@ -103,16 +120,26 @@ export function useShadowEditor({
                 selectedShadow.loot_item
             )
 
+            if (shadowResult.error || !shadowResult.data) {
+                throw shadowResult.error ?? new Error("Shadow update returned no data")
+            }
+
+            const updatedShadow = shadowResult.data
+
             for (const element of AFFINITY_ORDER) {
                 const affinity = affinities.find(
                     (item) => item.element === element
                 )
 
                 if (affinity) {
-                    await updateAffinityValue(
+                    const error = await updateAffinityValue(
                         affinity.id,
                         editAffinities[element]
                     )
+
+                    if (error) {
+                        throw error
+                    }
                 }
             }
 
@@ -128,7 +155,13 @@ export function useShadowEditor({
                         : shadow
                 )
             )
-            setAffinities(await getAffinities(updatedShadow.id))
+            const affinitiesResult = await getAffinities(updatedShadow.id)
+
+            if (affinitiesResult.error) {
+                throw affinitiesResult.error
+            }
+
+            setAffinities(affinitiesResult.data)
             setEditing(false)
             return true
         } catch (saveError) {
@@ -146,7 +179,14 @@ export function useShadowEditor({
     ) {
         try {
             setError(null)
-            await updateAffinityDiscovery(affinityId, discovered)
+            const error = await updateAffinityDiscovery(
+                affinityId,
+                discovered
+            )
+
+            if (error) {
+                throw error
+            }
             setAffinities((current) =>
                 current.map((affinity) =>
                     affinity.id === affinityId

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import type { Player, Shadow } from "../types"
+import type { Combatant, Player, Shadow } from "../types"
 import { rollDice } from "../utils/dice"
 import {
     getInitiativePlayers,
@@ -15,16 +15,22 @@ import {
     addPlayerCombatant,
     resetCombat,
     nextTurn,
-    setCombatActive,
+    setCombatActive as saveCombatActive,
     getCombatActive,
     endCombat,
     clearCombatLoot,
     setCombatLoot,
+    setCombatTurnNumber,
+    incrementCombatTurnNumber,
 } from "../services/combatants"
 import {
     calculateCombatLoot,
     sortCombatantsForInitiative,
 } from "../utils/combat"
+import {
+    getTurnHighlights,
+    type TurnHighlights,
+} from "../utils/turnHighlights"
 
  type CombatLoot = {
     yen: number
@@ -34,15 +40,135 @@ import {
 type UseCombatControllerProps = {
     readonly shadows: Shadow[]
     readonly onCombatLootChange: (loot: CombatLoot) => void
+    readonly onTurnHighlightsChange: (highlights: TurnHighlights) => void
+}
+
+async function addShadowToCombat(shadow: Shadow) {
+    const error = await addCombatant(shadow)
+
+    if (error) {
+        console.error(error)
+    }
+}
+
+async function addSelectedPlayers(players: Player[]) {
+    for (const player of players) {
+        const error = await addPlayerCombatant(player.id, player.name)
+
+        if (error) {
+            return error
+        }
+    }
+
+    return null
+}
+
+async function decayCombatantModifiers(combatant: Combatant) {
+    const modifierKeys = [
+        "damage_mod",
+        "armor_mod",
+        "accuracy_mod",
+    ] as const
+    const updates: Parameters<typeof updateCombatant>[1] = {}
+
+    for (const modifierKey of modifierKeys) {
+        const currentValue = combatant[modifierKey] ?? 0
+        const turnKey = `${modifierKey}_turns` as const
+        const currentTurns = combatant[turnKey] ?? 0
+
+        if (currentValue === 0 || currentTurns === 0) {
+            continue
+        }
+
+        const nextTurns = Math.max(0, currentTurns - 1)
+
+        if (nextTurns === 0) {
+            updates[modifierKey] = 0
+            updates[turnKey] = 0
+        } else {
+            updates[turnKey] = nextTurns
+        }
+    }
+
+    if (Object.keys(updates).length === 0) {
+        return
+    }
+
+    const updateError = await updateCombatant(combatant.id, updates)
+
+    if (updateError) {
+        console.error(updateError)
+    }
+}
+
+async function rollShadowInitiative(
+    combatants: Awaited<ReturnType<typeof getCombatants>>["data"],
+    shadows: Shadow[]
+) {
+    for (const combatant of combatants) {
+        if (combatant.combatant_type !== "shadow") {
+            continue
+        }
+
+        const shadow = shadows.find(
+            (item) => item.id === combatant.shadow_id
+        )
+        const agility = shadow?.shadow_stats?.[0]?.agility ?? 0
+        const initiative = rollDice(2, 6) + agility
+        const error = await updateCombatant(
+            combatant.id,
+            { initiative }
+        )
+
+        if (error) {
+            console.error(error)
+        }
+    }
+}
+
+async function persistCombatOrder(
+    combatants: Awaited<ReturnType<typeof getCombatants>>["data"]
+) {
+    const sortedCombatants = sortCombatantsForInitiative(combatants)
+
+    if (sortedCombatants.length === 0) {
+        return {
+            combatants: sortedCombatants,
+            error: null,
+        }
+    }
+
+    for (let index = 0; index < sortedCombatants.length; index++) {
+        const error = await updateCombatant(
+            sortedCombatants[index].id,
+            { position: index }
+        )
+
+        if (error) {
+            return {
+                combatants: sortedCombatants,
+                error,
+            }
+        }
+    }
+
+    const error = await updateCurrentTurn(sortedCombatants[0].id)
+
+    return {
+        combatants: sortedCombatants,
+        error,
+    }
 }
 
 export function useCombatController({
     shadows,
     onCombatLootChange,
+    onTurnHighlightsChange,
 }: UseCombatControllerProps) {
     const [players, setPlayers] = useState<Player[]>([])
     const [playerRolls, setPlayerRolls] = useState<Record<number, number>>({})
-    const [combatActive, setCombatActiveState] = useState(false)
+    const [combatActive, setCombatActive] = useState(false)
+    const [turnNumber, setTurnNumber] = useState(0)
     const [showInitiativeWindow, setShowInitiativeWindow] = useState(false)
 
     useEffect(() => {
@@ -65,7 +191,8 @@ export function useCombatController({
                 return
             }
 
-            setCombatActiveState(result.active)
+            setCombatActive(result.active)
+            setTurnNumber(result.turnNumber)
         }
 
         void loadPlayers()
@@ -78,22 +205,64 @@ export function useCombatController({
         if (error) {
             console.error(error)
         }
-    }
 
-    async function handleAddCombatant(shadow: Shadow) {
-        const error = await addCombatant(shadow)
-
-        if (error) {
-            console.error(error)
-        }
+        onTurnHighlightsChange({
+            skillId: null,
+            playerCombatantId: null,
+        })
     }
 
     async function handleNextTurn() {
-        const error = await nextTurn()
+        const previousCombatantsResult = await getCombatants()
 
-        if (error) {
-            console.error(error)
+        if (previousCombatantsResult.error) {
+            console.error(previousCombatantsResult.error)
+            return
         }
+
+        const endingCombatant = previousCombatantsResult.data.find(
+            (combatant) => combatant.is_current_turn
+        )
+
+        const result = await nextTurn()
+
+        if (result.error) {
+            console.error(result.error)
+            return
+        }
+
+        let currentTurnNumber = turnNumber
+
+        if (result.wrapped) {
+            const incrementResult = await incrementCombatTurnNumber()
+
+            if (incrementResult.error) {
+                console.error(incrementResult.error)
+                return
+            }
+
+            currentTurnNumber = incrementResult.turnNumber
+            setTurnNumber(currentTurnNumber)
+        }
+
+        const combatantsResult = await getCombatants()
+
+        if (combatantsResult.error) {
+            console.error(combatantsResult.error)
+            return
+        }
+
+        if (endingCombatant) {
+            await decayCombatantModifiers(endingCombatant)
+        }
+
+        onTurnHighlightsChange(
+            getTurnHighlights(
+                combatantsResult.data,
+                shadows,
+                currentTurnNumber
+            )
+        )
     }
 
     async function handleEndCombat() {
@@ -123,7 +292,11 @@ export function useCombatController({
         }
 
         onCombatLootChange(loot)
-        setCombatActiveState(false)
+        onTurnHighlightsChange({
+            skillId: null,
+            playerCombatantId: null,
+        })
+        setCombatActive(false)
         setShowInitiativeWindow(false)
     }
 
@@ -151,6 +324,11 @@ export function useCombatController({
     }
 
     async function startInitiative() {
+        onTurnHighlightsChange({
+            skillId: null,
+            playerCombatantId: null,
+        })
+
         const playersResult = await getInitiativePlayers()
 
         if (playersResult.error) {
@@ -158,13 +336,11 @@ export function useCombatController({
             return
         }
 
-        for (const player of playersResult.data) {
-            const error = await addPlayerCombatant(player.id, player.name)
+        const playersError = await addSelectedPlayers(playersResult.data)
 
-            if (error) {
-                console.error(error)
-                return
-            }
+        if (playersError) {
+            console.error(playersError)
+            return
         }
 
         const combatantsResult = await getCombatants()
@@ -174,25 +350,7 @@ export function useCombatController({
             return
         }
 
-        for (const combatant of combatantsResult.data) {
-            if (combatant.combatant_type !== "shadow") {
-                continue
-            }
-
-            const shadow = shadows.find(
-                (item) => item.id === combatant.shadow_id
-            )
-            const agility = shadow?.shadow_stats?.[0]?.agility ?? 0
-            const initiative = rollDice(2, 6) + agility
-            const error = await updateCombatant(
-                combatant.id,
-                { initiative }
-            )
-
-            if (error) {
-                console.error(error)
-            }
-        }
+        await rollShadowInitiative(combatantsResult.data, shadows)
 
         setShowInitiativeWindow(true)
     }
@@ -241,43 +399,45 @@ export function useCombatController({
             return
         }
 
-        const sortedCombatants = sortCombatantsForInitiative(
+        const orderResult = await persistCombatOrder(
             combatantsResult.data
         )
 
-        if (sortedCombatants.length === 0) {
+        if (orderResult.error || orderResult.combatants.length === 0) {
+            if (orderResult.error) {
+                console.error(orderResult.error)
+            }
             return
         }
 
-        for (let index = 0; index < sortedCombatants.length; index++) {
-            const error = await updateCombatant(
-                sortedCombatants[index].id,
-                { position: index }
-            )
+        const resetTurnError = await setCombatTurnNumber(1)
 
-            if (error) {
-                console.error(error)
-                return
-            }
+        if (resetTurnError) {
+            console.error(resetTurnError)
+            return
         }
 
-        const turnError = await updateCurrentTurn(
-            sortedCombatants[0].id
+        setTurnNumber(1)
+
+        onTurnHighlightsChange(
+            getTurnHighlights(
+                orderResult.combatants.map((combatant) => ({
+                    ...combatant,
+                    is_current_turn: combatant.id === orderResult.combatants[0].id,
+                })),
+                shadows,
+                1
+            )
         )
 
-        if (turnError) {
-            console.error(turnError)
-            return
-        }
-
-        const combatStateError = await setCombatActive(true)
+        const combatStateError = await saveCombatActive(true)
 
         if (combatStateError) {
             console.error(combatStateError)
             return
         }
 
-        setCombatActiveState(true)
+        setCombatActive(true)
         setShowInitiativeWindow(false)
     }
 
@@ -285,9 +445,10 @@ export function useCombatController({
         players,
         playerRolls,
         combatActive,
+        turnNumber,
         showInitiativeWindow,
         handleResetCombat,
-        handleAddCombatant,
+        handleAddCombatant: addShadowToCombat,
         handleNextTurn,
         handleEndCombat,
         togglePlayerInitiative,

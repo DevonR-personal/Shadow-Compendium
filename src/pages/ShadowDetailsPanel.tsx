@@ -1,4 +1,5 @@
 import type {
+    Combatant,
     Shadow,
     Skill,
     SkillAffinity,
@@ -9,10 +10,12 @@ import AffinityGrid from "../components/AffinityGrid"
 
 type ShadowDetailsPanelProps = {
     readonly shadow: Shadow | null
+    readonly combatant?: Combatant | null
     readonly onAffinityToggle: (
         affinityId: number,
         discovered: boolean
     ) => void
+    readonly highlightedSkillId: number | null
 }
 
 function getSkillAffinityLabel(
@@ -25,52 +28,126 @@ function getSkillAffinityLabel(
     return AFFINITY_LABELS[affinity]
 }
 
-function SkillCard({
+function getDamageRoll(description: string | null) {
+    return description?.match(/\b\d+d\d+\b/i)?.[0] ?? null
+}
+
+function SkillTable({
+    title,
+    skills,
+    shadow,
+    combatant,
+    showAffinityAndRoll,
+    highlightedSkillId,
+}: {
+    readonly title: string
+    readonly skills: Skill[]
+    readonly shadow: Shadow
+    readonly combatant?: Combatant | null
+    readonly showAffinityAndRoll: boolean
+    readonly highlightedSkillId: number | null
+}) {
+    if (skills.length === 0) {
+        return null
+    }
+
+    return (
+        <section className="shadow-details-section">
+            <h3>{title}</h3>
+            <table className={showAffinityAndRoll
+                ? "shadow-skill-table full"
+                : "shadow-skill-table compact"}>
+                <tbody>
+                    {skills.map((skill) => (
+                        <SkillTableRows
+                            key={skill.id}
+                            skill={skill}
+                            modifier={getSkillModifier(skill, shadow)}
+                            accuracyModifier={combatant?.accuracy_mod ?? 0}
+                            damageModifier={combatant?.damage_mod ?? 0}
+                            showAffinityAndRoll={showAffinityAndRoll}
+                            highlighted={skill.id === highlightedSkillId}
+                        />
+                    ))}
+                </tbody>
+            </table>
+        </section>
+    )
+}
+
+function SkillTableRows({
     skill,
     modifier,
+    accuracyModifier,
+    damageModifier,
+    showAffinityAndRoll,
+    highlighted,
 }: {
     readonly skill: Skill
     readonly modifier: number | null
+    readonly accuracyModifier: number
+    readonly damageModifier: number
+    readonly showAffinityAndRoll: boolean
+    readonly highlighted: boolean
 }) {
-    const affinityClass = skill.affinity
-        ? ` ${skill.affinity}`
-        : ""
-
-    const iconSrc = skill.affinity
+    const affinityImage = skill.affinity
         ? `/icons/Icon_${getSkillAffinityLabel(skill.affinity)}.png`
         : null
+    const damageRoll = getDamageRoll(skill.description)
+    const effectiveModifier = modifier === null
+        ? null
+        : modifier + accuracyModifier
+    const damageSuffix = damageModifier === 0
+        ? ""
+        : `${damageModifier > 0 ? "+" : ""}${damageModifier}`
+    const formattedDamage = damageRoll
+        ? damageRoll + damageSuffix
+        : "—"
 
     return (
-        <div className={`shadow-skill-card${affinityClass}`}
-            title={skill.description ?? undefined}>
-
-            {iconSrc && (
-                <img
-                    className="shadow-skill-icon"
-                    src={iconSrc}
-                    alt=""
-                />
-            )}
-
-            <div className="shadow-skill-name">
-                {skill.name}
-            </div>
-
-            {modifier !== null && (
-                <div className="shadow-skill-modifier">
-                    {modifier >= 0
-                        ? `+${modifier}`
-                        : modifier}
-                </div>
-            )}
-
-        </div>
+        <>
+            <tr className={highlighted
+                ? "shadow-skill-summary skill-turn-highlight"
+                : "shadow-skill-summary"}>
+                <th scope="row">{skill.name}</th>
+                {showAffinityAndRoll && (
+                    <td>
+                        {affinityImage ? (
+                            <img
+                                className="shadow-skill-affinity-image"
+                                src={affinityImage}
+                                alt={skill.affinity ?? ""}
+                            />
+                        ) : (
+                            "—"
+                        )}
+                    </td>
+                )}
+                <td>
+                    {effectiveModifier === null
+                        ? "—"
+                        : effectiveModifier >= 0
+                            ? `+${effectiveModifier}`
+                            : effectiveModifier}
+                </td>
+                {showAffinityAndRoll && (
+                    <td>{formattedDamage}</td>
+                )}
+            </tr>
+            <tr className="shadow-skill-description">
+                <td colSpan={showAffinityAndRoll ? 4 : 2}>
+                    {skill.description ?? "No description."}
+                </td>
+            </tr>
+        </>
     )
 }
 
 export default function ShadowDetailsPanel({
     shadow,
+    combatant,
     onAffinityToggle,
+    highlightedSkillId,
 }: ShadowDetailsPanelProps) {
     if (!shadow) {
         return (
@@ -84,6 +161,7 @@ export default function ShadowDetailsPanel({
 
     const stats =
         shadow.shadow_stats?.[0] ?? null
+    const armorTotal = (shadow.armor ?? 0) + (combatant?.armor_mod ?? 0)
 
     const skills = shadow.shadow_skills
         .flatMap((entry) => entry.skills)
@@ -169,7 +247,7 @@ export default function ShadowDetailsPanel({
                     </span>
 
                     <strong>
-                        {shadow.armor ?? "—"}
+                        {armorTotal >= 0 ? `${armorTotal}` : armorTotal}
                     </strong>
                 </div>
 
@@ -249,73 +327,30 @@ export default function ShadowDetailsPanel({
             </section>
 
 
-            <section className="shadow-details-section">
-
-                <h3>
-                    Skills
-                </h3>
-
-                <div className="shadow-skill-grid">
-
-                    {regularSkills.map(
-                        (skill) => (
-                            <SkillCard
-                                key={skill.id}
-                                skill={skill}
-                                modifier={getSkillModifier(skill, shadow)}
-                            />
-                        )
-                    )}
-
-                </div>
-
-            </section>
-
-
-            <section className="shadow-details-section">
-
-                <h3>
-                    Active
-                </h3>
-
-                <div className="shadow-move-grid">
-
-                    {activeSkills.map(
-                        (skill) => (
-                            <SkillCard
-                                key={skill.id}
-                                skill={skill}
-                                modifier={getSkillModifier(skill, shadow)}
-                            />
-                        )
-                    )}
-
-                </div>
-
-            </section>
-
-
-            <section className="shadow-details-section">
-
-                <h3>
-                    Passive
-                </h3>
-
-                <div className="shadow-move-grid">
-
-                    {passiveSkills.map(
-                        (skill) => (
-                            <SkillCard
-                                key={skill.id}
-                                skill={skill}
-                                modifier={getSkillModifier(skill, shadow)}
-                            />
-                        )
-                    )}
-
-                </div>
-
-            </section>
+            <SkillTable
+                title="Skills"
+                skills={regularSkills}
+                shadow={shadow}
+                combatant={combatant}
+                showAffinityAndRoll={true}
+                highlightedSkillId={highlightedSkillId}
+            />
+            <SkillTable
+                title="Active"
+                skills={activeSkills}
+                shadow={shadow}
+                combatant={combatant}
+                showAffinityAndRoll={false}
+                highlightedSkillId={highlightedSkillId}
+            />
+            <SkillTable
+                title="Passive"
+                skills={passiveSkills}
+                shadow={shadow}
+                combatant={combatant}
+                showAffinityAndRoll={false}
+                highlightedSkillId={highlightedSkillId}
+            />
 
         </aside>
     )

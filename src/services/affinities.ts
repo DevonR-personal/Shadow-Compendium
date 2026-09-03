@@ -11,11 +11,10 @@ export async function getAffinities(
     )
     .eq("shadow_id", shadowId)
 
-  if (error) {
-    throw error
+  return {
+    data: (data ?? []) as Affinity[],
+    error,
   }
-
-  return (data ?? []) as Affinity[]
 }
 
 
@@ -28,9 +27,7 @@ export async function updateAffinityDiscovery(
     .update({ discovered })
     .eq("id", affinityId)
 
-  if (error) {
-    throw error
-  }
+  return error
 }
 
 export async function revealAffinityForShadow(
@@ -43,9 +40,7 @@ export async function revealAffinityForShadow(
         .eq("shadow_id", shadowId)
         .eq("element", element)
 
-    if (error) {
-        throw error
-    }
+    return error
 }
 
 export async function updateAffinityValue(
@@ -57,7 +52,5 @@ export async function updateAffinityValue(
     .update({ value })
     .eq("id", affinityId)
 
-  if (error) {
-    throw error
-  }
+  return error
 }

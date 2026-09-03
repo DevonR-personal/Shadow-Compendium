@@ -134,6 +134,12 @@ async function insertShadowCombatant(
             initiative,
             hp: shadow.max_hp,
             max_hp: shadow.max_hp,
+            damage_mod: 0,
+            armor_mod: 0,
+            accuracy_mod: 0,
+            damage_mod_turns: 0,
+            armor_mod_turns: 0,
+            accuracy_mod_turns: 0,
             position,
         })
 
@@ -185,7 +191,15 @@ export async function updateCombatant(
     updates: Partial<
         Pick<
             Combatant,
-            "hp" | "initiative" | "position"
+            | "hp"
+            | "initiative"
+            | "position"
+            | "damage_mod"
+            | "armor_mod"
+            | "accuracy_mod"
+            | "damage_mod_turns"
+            | "armor_mod_turns"
+            | "accuracy_mod_turns"
         >
     >
 ) {
@@ -253,7 +267,10 @@ export async function nextTurn() {
         .order("position")
 
     if (error || !data) {
-        return error
+        return {
+            error,
+            wrapped: false,
+        }
     }
 
     const currentIndex = data.findIndex(
@@ -261,7 +278,10 @@ export async function nextTurn() {
     )
 
     if (currentIndex === -1) {
-        return null
+        return {
+            error: null,
+            wrapped: false,
+        }
     }
 
     let nextIndex = -1
@@ -283,7 +303,10 @@ export async function nextTurn() {
     }
 
     if (nextIndex === -1) {
-        return null
+        return {
+            error: null,
+            wrapped: false,
+        }
     }
 
     const { error: clearError } =
@@ -298,7 +321,10 @@ export async function nextTurn() {
             )
 
     if (clearError) {
-        return clearError
+        return {
+            error: clearError,
+            wrapped: false,
+        }
     }
 
     const { error: setError } =
@@ -312,7 +338,10 @@ export async function nextTurn() {
                 data[nextIndex].id
             )
 
-    return setError
+    return {
+        error: setError,
+        wrapped: nextIndex <= currentIndex,
+    }
 }
 
 
@@ -334,9 +363,7 @@ export async function updateCombatantDowned(
         .update({ downed })
         .eq("id", combatantId)
 
-    if (error) {
-        throw error
-    }
+    return error
 }
 
 export async function updateCombatantCondition(
@@ -350,20 +377,47 @@ export async function updateCombatantCondition(
         })
         .eq("id", combatantId)
 
-    if (error) {
-        throw error
-    }
+    return error
 }
 
 export async function getCombatActive() {
     const { data, error } = await supabase
         .from("combat_state")
-        .select("is_active")
+        .select("is_active, turn_number")
         .eq("id", 1)
         .maybeSingle()
 
     return {
         active: data?.is_active ?? false,
+        turnNumber: data?.turn_number ?? 0,
+        error,
+    }
+}
+
+export async function setCombatTurnNumber(turnNumber: number) {
+    const { error } = await supabase
+        .from("combat_state")
+        .update({ turn_number: turnNumber })
+        .eq("id", 1)
+
+    return error
+}
+
+export async function incrementCombatTurnNumber() {
+    const state = await getCombatActive()
+
+    if (state.error) {
+        return {
+            turnNumber: state.turnNumber,
+            error: state.error,
+        }
+    }
+
+    const turnNumber = state.turnNumber + 1
+    const error = await setCombatTurnNumber(turnNumber)
+
+    return {
+        turnNumber,
         error,
     }
 }
@@ -390,6 +444,12 @@ export async function endCombat() {
         .from("combatants")
         .update({
             is_current_turn: false,
+            damage_mod: 0,
+            armor_mod: 0,
+            accuracy_mod: 0,
+            damage_mod_turns: 0,
+            armor_mod_turns: 0,
+            accuracy_mod_turns: 0,
         })
         .neq("id", 0)
 

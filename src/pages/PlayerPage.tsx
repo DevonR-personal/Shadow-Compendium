@@ -11,6 +11,7 @@ type PlayerPageProps = Readonly<{
         yen: number
         items: string[]
     }) => void
+    readonly highlightedPlayerCombatantId: number | null
     onRefreshShadows: () => Promise<void>
 }>
 
@@ -18,6 +19,7 @@ export default function PlayerPage({
     shadows,
     combatLoot,
     onCombatLootChange,
+    highlightedPlayerCombatantId,
     onRefreshShadows,
 }: PlayerPageProps) {
     return (
@@ -29,6 +31,7 @@ export default function PlayerPage({
             lootYen={combatLoot.yen}
             lootItems={combatLoot.items}
             onCombatLootChange={onCombatLootChange}
+            highlightedPlayerCombatantId={highlightedPlayerCombatantId}
         />
     )
 }

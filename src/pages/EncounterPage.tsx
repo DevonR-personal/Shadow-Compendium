@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import {
     getCombatants,
     getCombatLoot,
+    getCombatActive,
     removeCombatant,
     updateCombatant,
     updateCombatantDowned,
@@ -9,22 +10,28 @@ import {
 } from "../services/combatants"
 import type { Combatant, Shadow } from "../types"
 import { supabase } from "../supabase"
-import { AFFINITY_ORDER } from "../utils/affinities"
+import { AFFINITY_ORDER } from "../constants/affinities"
 import { getConditions } from "../services/conditions"
 import CombatLootBar from "../components/CombatLootBar"
 import CombatantRow from "../components/CombatantRow"
+import type { TurnHighlights } from "../utils/turnHighlights"
+import {
+    applyModifierDelta,
+    type ModifierKey,
+} from "../utils/modifiers"
 
 type EncounterPageProps = Readonly<{
     shadows: Shadow[]
     playerView: boolean
     onRefreshShadows: () => Promise<void>
-    onSelectShadow: (shadow: Shadow) => void
+    onSelectShadow: (shadow: Shadow, combatant?: Combatant) => void
     lootYen: number
     lootItems: string[]
     onCombatLootChange: (loot: {
         yen: number
         items: string[]
     }) => void
+    highlightedPlayerCombatantId: TurnHighlights["playerCombatantId"]
 }>
 
 export default function EncounterPage({
@@ -35,10 +42,12 @@ export default function EncounterPage({
     lootYen,
     lootItems,
     onCombatLootChange,
+    highlightedPlayerCombatantId,
 }: Readonly<EncounterPageProps>) {
     const [combatants, setCombatants] = useState<Combatant[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [turnNumber, setTurnNumber] = useState(0)
     const [conditions, setConditions] = useState<
         Awaited<ReturnType<typeof getConditions>>["data"]
     >([])
@@ -79,8 +88,20 @@ export default function EncounterPage({
             })
         }
 
+        async function loadCombatState() {
+            const result = await getCombatActive()
+
+            if (result.error) {
+                console.error(result.error)
+                return
+            }
+
+            setTurnNumber(result.turnNumber)
+        }
+
         void loadData()
         void loadCombatLoot()
+        void loadCombatState()
 
         void getConditions().then((result) => {
             if (result.error) {
@@ -132,6 +153,7 @@ export default function EncounterPage({
                 },
                 () => {
                     void loadCombatLoot()
+                    void loadCombatState()
                 }
             )
             .subscribe()
@@ -167,7 +189,7 @@ export default function EncounterPage({
         )
 
         if (shadow) {
-            onSelectShadow?.(shadow)
+            onSelectShadow?.(shadow, currentCombatant)
         }
     }, [combatants, shadows, onSelectShadow])
 
@@ -207,9 +229,12 @@ export default function EncounterPage({
 
         const damage = Number(amount)
 
-        if (Number.isNaN(damage)) {
+        if (!Number.isFinite(damage) || damage === 0) {
             return
         }
+
+        const isHealing = damage < 0
+        const magnitude = Math.abs(damage)
 
         const shadow =
             combatant.combatant_type === "shadow" &&
@@ -221,25 +246,33 @@ export default function EncounterPage({
             shadow?.armor ?? 0
 
         const actualDamage =
-            combatant.combatant_type === "shadow"
-                ? Math.max(1, damage - armor)
-                : damage
+            combatant.combatant_type === "shadow" && !isHealing
+                ? Math.max(1, magnitude - armor)
+                : magnitude
 
         const currentHP =
             combatant.hp ?? 0
 
-        const newHP = Math.min(
-            combatant.max_hp ?? currentHP,
-            Math.max(
-                0,
-                currentHP - actualDamage
+        const nextHP = isHealing
+            ? Math.min(
+                combatant.max_hp ?? currentHP,
+                Math.max(
+                    0,
+                    currentHP + actualDamage
+                )
             )
-        )
+            : Math.min(
+                combatant.max_hp ?? currentHP,
+                Math.max(
+                    0,
+                    currentHP - actualDamage
+                )
+            )
 
         const error =
             await updateCombatant(
                 combatant.id,
-                { hp: newHP }
+                { hp: nextHP }
             )
 
         if (error) {
@@ -251,17 +284,14 @@ export default function EncounterPage({
     async function handleToggleDowned(
         combatant: Combatant
     ) {
-        try {
-            await updateCombatantDowned(
-                combatant.id,
-                !combatant.downed
-            )
-        } catch (error) {
-            console.error(error)
+        const error = await updateCombatantDowned(
+            combatant.id,
+            !combatant.downed
+        )
 
-            if (error instanceof Error) {
-                setError(error.message)
-            }
+        if (error) {
+            console.error(error)
+            setError(error.message)
         }
     }
 
@@ -274,26 +304,57 @@ export default function EncounterPage({
                 ? null
                 : Number(value)
 
-        try {
-            await updateCombatantCondition(
-                combatant.id,
-                conditionId
-            )
-        } catch (error) {
-            console.error(error)
+        const error = await updateCombatantCondition(
+            combatant.id,
+            conditionId
+        )
 
-            if (error instanceof Error) {
-                setError(error.message)
-            }
+        if (error) {
+            console.error(error)
+            setError(error.message)
+        }
+    }
+
+    async function handleModifierChange(
+        combatant: Combatant,
+        key: ModifierKey,
+        value: number
+    ) {
+        const nextValue = applyModifierDelta(value, 0, key)
+        const turnKey = `${key}_turns` as const
+        const nextTurns = nextValue === 0 ? 0 : 3
+
+        const updates: Parameters<typeof updateCombatant>[1] = {
+            [key]: nextValue,
+            [turnKey]: nextTurns,
+        }
+
+        const error = await updateCombatant(
+            combatant.id,
+            updates
+        )
+
+        if (error) {
+            console.error(error)
+            setError(error.message)
         }
     }
 
     return (
-        <main className="app">
+        <main className={playerView ? "app player-app" : "app"}>
+            {playerView && (
+                <div className="player-turn-number">
+                    Turn Number: {turnNumber}
+                </div>
+            )}
             {combatants.length === 0 ? (
                 <p>No combatants.</p>
             ) : (
-                <div className="combatant-list">
+                <div
+                    className={playerView
+                        ? "combatant-list player-combatant-list"
+                        : "combatant-list gm-combatant-list"}
+                >
 
                     <div
                         className={
@@ -305,7 +366,11 @@ export default function EncounterPage({
                         <span>INIT</span>
                         <span>NAME</span>
                         <span>STATUS</span>
-                        {AFFINITY_ORDER.map((affinity) => (
+                        <span>Dam</span>
+                        <span>Arm</span>
+                        <span>Acc</span>
+                        <span />
+                        {playerView && AFFINITY_ORDER.map((affinity) => (
                             <span
                                 key={affinity}
                                 className={`affinity-header ${affinity}`}
@@ -327,7 +392,11 @@ export default function EncounterPage({
                             onDamage={handleDamage}
                             onToggleDowned={handleToggleDowned}
                             onConditionChange={handleConditionChange}
+                            onModifierChange={handleModifierChange}
                             onRemove={handleRemoveCombatant}
+                            highlighted={
+                                combatant.id === highlightedPlayerCombatantId
+                            }
                         />
                     ))}
 

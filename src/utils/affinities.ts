@@ -4,20 +4,7 @@ import type {
     Shadow,
     SkillAffinity,
 } from "../types"
-
-
-export const AFFINITY_ORDER = [
-  "melee",
-  "ranged",
-  "fire",
-  "ice",
-  "wind",
-  "electric",
-  "psychic",
-  "nuclear",
-  "bless",
-  "curse",
-] as const
+import { AFFINITY_ORDER } from "../constants/affinities"
 
 export const AFFINITY_GRID_ORDER = [
   [
@@ -65,8 +52,8 @@ export function sortAffinities<T extends string>(
 ) {
   return affinities.toSorted(
     (a, b) =>
-      AFFINITY_ORDER.indexOf(a as typeof AFFINITY_ORDER[number]) -
-      AFFINITY_ORDER.indexOf(b as typeof AFFINITY_ORDER[number])
+      AFFINITY_ORDER.indexOf(a as AffinityElement) -
+      AFFINITY_ORDER.indexOf(b as AffinityElement)
   )
 }
 

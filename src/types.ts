@@ -63,6 +63,12 @@ export type Combatant = {
   combatant_type: "shadow" | "player"
   hp: number | null
   max_hp: number | null
+  damage_mod: number | null
+  armor_mod: number | null
+  accuracy_mod: number | null
+  damage_mod_turns: number | null
+  armor_mod_turns: number | null
+  accuracy_mod_turns: number | null
   position: number
   is_current_turn: boolean
   downed: boolean

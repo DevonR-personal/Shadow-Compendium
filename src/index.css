@@ -8,6 +8,27 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #743333 #171717;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #171717;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid #171717;
+  border-radius: 6px;
+  background: #743333;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #a34a4a;
 }
 
 body {
@@ -37,9 +58,30 @@ button:hover {
 
 .app {
   min-height: 100vh;
-  padding: 32px;
-  max-width: 1100px;
+  width: 100%;
+  padding: 16px 8px;
+  max-width: none;
   margin: 0 auto;
+}
+
+.player-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-right: 58px;
+}
+
+.player-turn-number {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  padding: 0;
+  background: transparent;
+  color: #f0c674;
+  font-size: 1.15rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .app-header,
@@ -254,7 +296,7 @@ button:hover {
 
 .gm-layout {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) 360px;
+  grid-template-columns: 309px minmax(0, 1fr) 360px;
   height: 100vh;
   min-width: 0;
 }
@@ -269,39 +311,49 @@ button:hover {
 .gm-library-panel,
 .gm-combat-panel {
   height: 100vh;
-  min-height: 0;
 }
 
 .gm-library-panel {
   display: flex;
-  flex-direction: column;
   width: 309px;
+  min-width: 0;
+  flex-direction: column;
 }
 
 .shadow-library {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+  display: flex;
+  min-height: 0;
 }
 
 .shadow-list-scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .library-content {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   min-height: 0;
 }
 
 .combatant-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 0.15rem;
 
-  overflow-x: visible;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.gm-combatant-list {
+  grid-template-columns:
+    40px minmax(100px, max-content) minmax(100px, 150px) 56px 56px 56px minmax(40px, 1fr) 90px 30px;
+}
+
+.player-combatant-list {
+  grid-template-columns:
+    40px minmax(100px, 180px) minmax(56px, 86px) 48px 48px 48px minmax(40px, 1fr) repeat(10, 40px) 90px;
 }
 
 .combatant-header,
@@ -309,25 +361,23 @@ button:hover {
   display: grid;
   align-items: center;
   gap: 4px;
+  width: 100%;
+  min-width: 100%;
+  grid-column: 1 / -1;
 }
 
 .gm-combatant-row,
 .gm-combatant-header {
-  grid-template-columns:
-    26px minmax(100px, max-content) 100px minmax(40px, 1fr) 90px 30px;
   width: 100%;
-  min-width: 0;
-}
-
-.gm-combatant-row .player-affinity-spacer {
-  grid-column: 4;
+  grid-template-columns: 40px minmax(100px, max-content) minmax(100px, 150px) 56px 56px 56px minmax(40px, 1fr) 90px 30px;
 }
 
 .player-combatant-row,
 .player-combatant-header {
-  grid-template-columns:
-    26px minmax(100px, 1fr) 100px repeat(10, 40px) 90px;
+  width: 100%;
+  grid-template-columns: 40px minmax(100px, 180px) minmax(56px, 86px) 48px 48px 48px minmax(40px, 1fr) repeat(10, 40px) 90px;
 }
+
 
 .combatant-header {
   font-size: 0.8rem;
@@ -337,7 +387,6 @@ button:hover {
 .combatant-row {
   padding: 0.25rem;
   font-size: 0.8rem;
-  border-left: 4px solid transparent;
 }
 
 .combatant-name-button {
@@ -350,6 +399,32 @@ button:hover {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combatant-name-cell {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combatant-name-text {
+  display: block;
+  width: 100%;
+  padding: 8px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.combatant-name-cell .combatant-name-button {
+  width: 100%;
 }
 
 .combatant-init {
@@ -422,8 +497,20 @@ button:hover {
 }
 
 .current-turn {
-  background: rgba(255, 215, 0, 0.2);
-  border-left: 4px solid gold;
+  background: rgba(255, 215, 0, 0.12);
+}
+
+.turn-highlight {
+  background: transparent;
+}
+
+.gm-combatant-row.turn-highlight .combatant-name-cell {
+  background: rgba(255, 76, 76, 0.3);
+  border-radius: 4px;
+}
+
+.skill-turn-highlight {
+  background: rgba(112, 0, 0, 0.72);
 }
 
 .combatant-hp {
@@ -438,12 +525,95 @@ button:hover {
   min-width: 0;
 }
 
+.gm-combatant-row .combatant-status {
+  width: 150px;
+  max-width: 150px;
+  overflow: hidden;
+}
+
+.modifier-cell,
+.modifier-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.modifier-cell {
+  position: relative;
+  overflow: hidden;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(19, 24, 31, 0.9);
+}
+
+.modifier-select {
+  width: 100%;
+  min-width: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  background: transparent;
+  color: #eee;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.modifier-select option {
+  background: rgba(17, 20, 26, 0.96);
+  color: #eee;
+}
+
+.modifier-select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.modifier-value {
+  min-width: 30px;
+  font-weight: 700;
+  color: #f2f2f2;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
 .status-controls,
 .status-display {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-direction: column;
   gap: 2px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.combatant-condition-row {
+  grid-column: 2 / -1;
+  padding: 0.2rem 0.45rem 0.45rem;
+  color: #d5d8e6;
+  font-size: 0.68rem;
+  opacity: 0.9;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.gm-condition-row {
+  width: 100%;
+  max-width: 100%;
+}
+
+.affinity-grid-wrapper {
+  display: contents;
 }
 
 .condition-select {
@@ -626,8 +796,18 @@ button:hover {
   background-image: url("/skills/SkillRanged.png");
 }
 
-.player-affinity-spacer {
-  grid-column: span 10;
+.player-affinity-spacer,
+.gm-affinity-spacer {
+  min-width: 0;
+}
+
+.player-affinity-fill {
+  grid-column: span 11;
+  min-width: 0;
+}
+
+.gm-combatant-row .player-affinity-fill {
+  grid-column: span 1;
 }
 
 .shadow-name-button {
@@ -636,6 +816,7 @@ button:hover {
   font-size: 12px;
   color: inherit;
   width: 100%;
+  min-height: 38px;
   padding: 0;
 
   text-align: left;
@@ -722,6 +903,14 @@ button:hover {
 .gm-combat-controls button:focus-visible {
   outline: 1px solid currentColor;
   outline-offset: 3px;
+}
+
+.turn-number {
+  margin-left: auto;
+  color: #f0c674;
+  font-size: 1.15rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .gm-details-panel {
@@ -934,99 +1123,67 @@ button:hover {
   font-weight: 700;
 }
 
-.shadow-skill-grid {
-  display: grid;
-
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-
-  gap: 5px;
+.shadow-skill-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.78rem;
 }
 
-
-/* Active / passive moves */
-
-.shadow-move-grid {
-  display: grid;
-
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-
-  gap: 6px;
-}
-
-
-/* Skill cards */
-
-.shadow-skill-card {
-  position: relative;
-
-  min-height: 70px;
-  overflow: hidden;
-
-  padding: 8px 10px;
-
+.shadow-skill-table th,
+.shadow-skill-table td {
+  padding: 5px 6px;
   border: 1px solid #333;
-  border-radius: 6px;
-
-  background: #1b1b1b;
-  isolation: isolate;
+  text-align: left;
+  vertical-align: middle;
 }
 
-.shadow-skill-name {
-  position: relative;
-  z-index: 2;
-
-  padding-right: 28px;
-
-  font-weight: 600;
-
-  text-shadow:
-    1px 1px 3px #000,
-    -1px -1px 3px #000;
+.shadow-skill-table.full tr > :first-child {
+  width: 48%;
 }
 
-.shadow-skill-modifier {
-  position: absolute;
+.shadow-skill-table.full tr > :nth-child(2),
+.shadow-skill-table.full tr > :nth-child(3),
+.shadow-skill-table.full tr > :nth-child(4) {
+  width: 18%;
+  text-align: center;
+}
 
-  right: 8px;
-  bottom: 6px;
+.shadow-skill-table.full tr > :nth-child(3),
+.shadow-skill-table.full tr > :nth-child(4) {
+  width: 17%;
+  text-align: center;
+}
 
-  z-index: 2;
+.shadow-skill-table.compact tr > :first-child {
+  width: 78%;
+}
 
+.shadow-skill-table.compact tr > :nth-child(2) {
+  width: 22%;
+  text-align: center;
+}
+
+.shadow-skill-summary th {
   font-weight: 700;
-
-  text-shadow:
-    1px 1px 3px #000,
-    -1px -1px 3px #000;
 }
 
-.shadow-skill-icon {
-  position: absolute;
+.shadow-skill-summary td {
+  text-align: center;
+}
 
-  top: 5px;
-  right: 5px;
-
-  width: 22px;
-  height: 22px;
-
+.shadow-skill-affinity-image {
+  display: block;
+  width: 24px;
+  height: 20px;
+  margin: 0 auto;
   object-fit: contain;
-
-  z-index: 1;
-
-  opacity: 0.9;
-
-  pointer-events: none;
 }
 
-.shadow-skill-card:hover {
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.shadow-skill-affinity {
-  margin-top: 3px;
-
-  color: #888;
-
-  font-size: 0.68rem;
+.shadow-skill-description td {
+  color: #bbb;
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
 .affinity-value {

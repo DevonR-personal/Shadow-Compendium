@@ -79,9 +79,8 @@ export async function updateShadow(
     `)
     .single()
 
-  if (error) {
-    throw error
+  return {
+    data: data as UpdatedShadow | null,
+    error,
   }
-
-  return data as UpdatedShadow
 }

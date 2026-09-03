@@ -5,6 +5,7 @@ import type { Shadow } from "../types"
 import ShadowDetailsPanel from "./ShadowDetailsPanel"
 import { updateAffinityDiscovery } from "../services/affinities"
 import { useCombatController } from "../hooks/useCombatController"
+import type { TurnHighlights } from "../utils/turnHighlights"
 
 type GMPageProps = {
     shadows: Shadow[]
@@ -16,6 +17,9 @@ type GMPageProps = {
         yen: number
         items: string[]
     }) => void
+    onTurnHighlightsChange: (highlights: TurnHighlights) => void
+    highlightedPlayerCombatantId: TurnHighlights["playerCombatantId"]
+    highlightedSkillId: TurnHighlights["skillId"]
     loading: boolean
     error: string | null
     onSelectShadow: (shadow: Shadow) => void
@@ -26,6 +30,9 @@ export default function GMPage({
     shadows,
     combatLoot,
     onCombatLootChange,
+    onTurnHighlightsChange,
+    highlightedPlayerCombatantId,
+    highlightedSkillId,
     loading,
     error,
     onSelectShadow,
@@ -35,10 +42,13 @@ export default function GMPage({
         useState<"shadows" | "players">("shadows")
     const [selectedShadow, setSelectedShadow] =
         useState<Shadow | null>(null)
+    const [selectedCombatant, setSelectedCombatant] =
+        useState<import("../types").Combatant | null>(null)
     const {
         players,
         playerRolls,
         combatActive,
+        turnNumber,
         showInitiativeWindow,
         handleResetCombat,
         handleAddCombatant,
@@ -51,16 +61,21 @@ export default function GMPage({
     } = useCombatController({
         shadows,
         onCombatLootChange,
+        onTurnHighlightsChange,
     })
     async function handleAffinityToggle(
         affinityId: number,
         discovered: boolean
     ) {
         try {
-            await updateAffinityDiscovery(
+            const error = await updateAffinityDiscovery(
                 affinityId,
                 discovered
             )
+
+            if (error) {
+                throw error
+            }
 
             setSelectedShadow((current) =>
                 current
@@ -188,16 +203,24 @@ export default function GMPage({
                     >
                         Reset Combat
                     </button>
+
+                    <span className="turn-number">
+                        Turn Number: {turnNumber}
+                    </span>
                 </nav>
 
                 <EncounterPage
                     shadows={shadows}
                     playerView={false}
                     onRefreshShadows={onRefreshShadows}
-                    onSelectShadow={setSelectedShadow}
+                    onSelectShadow={(shadow, combatant) => {
+                        setSelectedShadow(shadow)
+                        setSelectedCombatant(combatant ?? null)
+                    }}
                     lootYen={combatLoot.yen}
                     lootItems={combatLoot.items}
                     onCombatLootChange={onCombatLootChange}
+                    highlightedPlayerCombatantId={highlightedPlayerCombatantId}
                 />
 
             </section>
@@ -205,7 +228,9 @@ export default function GMPage({
             <section className="gm-details-panel">
                 <ShadowDetailsPanel
                     shadow={selectedShadow}
+                    combatant={selectedCombatant}
                     onAffinityToggle={handleAffinityToggle}
+                    highlightedSkillId={highlightedSkillId}
                 />
             </section>
 

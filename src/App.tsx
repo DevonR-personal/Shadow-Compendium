@@ -7,6 +7,7 @@ import PlayerPage from './pages/PlayerPage'
 import { useShadowLibrary } from './hooks/useShadowLibrary'
 import { useCombatLoot } from './hooks/useCombatLoot'
 import { useShadowEditor } from './hooks/useShadowEditor'
+import type { TurnHighlights } from './utils/turnHighlights'
 
 function App() {
   const {
@@ -20,6 +21,11 @@ function App() {
     combatLoot,
     setCombatLoot,
   } = useCombatLoot()
+  const [turnHighlights, setTurnHighlights] =
+    useState<TurnHighlights>({
+      skillId: null,
+      playerCombatantId: null,
+    })
   const [selectedShadow, setSelectedShadow] =
     useState<Shadow | null>(null)
 
@@ -114,6 +120,7 @@ function App() {
         onRefreshShadows={refreshShadows}
         combatLoot={combatLoot}
         onCombatLootChange={setCombatLoot}
+        highlightedPlayerCombatantId={turnHighlights.playerCombatantId}
       />
     )
   }
@@ -127,6 +134,9 @@ function App() {
       onRefreshShadows={refreshShadows}
       combatLoot={combatLoot}
       onCombatLootChange={setCombatLoot}
+      onTurnHighlightsChange={setTurnHighlights}
+      highlightedSkillId={turnHighlights.skillId}
+      highlightedPlayerCombatantId={turnHighlights.playerCombatantId}
     />
   )
 }
