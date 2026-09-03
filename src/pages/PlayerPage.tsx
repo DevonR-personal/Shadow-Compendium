@@ -3,11 +3,21 @@ import type { Shadow } from "../types"
 
 type PlayerPageProps = Readonly<{
     readonly shadows: Shadow[]
+    readonly combatLoot: {
+        yen: number
+        items: string[]
+    }
+    readonly onCombatLootChange: (loot: {
+        yen: number
+        items: string[]
+    }) => void
     onRefreshShadows: () => Promise<void>
 }>
 
 export default function PlayerPage({
     shadows,
+    combatLoot,
+    onCombatLootChange,
     onRefreshShadows,
 }: PlayerPageProps) {
     return (
@@ -16,6 +26,9 @@ export default function PlayerPage({
             playerView={true}
             onRefreshShadows={onRefreshShadows}
             onSelectShadow={() => {}}
+            lootYen={combatLoot.yen}
+            lootItems={combatLoot.items}
+            onCombatLootChange={onCombatLootChange}
         />
     )
 }

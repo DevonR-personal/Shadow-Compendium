@@ -5,7 +5,9 @@ export function rollDice(
     let total = 0
 
     for (let i = 0; i < count; i++) {
-        total += Math.floor(Math.random() * sides) + 1
+        const randomValue = new Uint32Array(1)
+        crypto.getRandomValues(randomValue)
+        total += (randomValue[0] % sides) + 1
     }
 
     return total

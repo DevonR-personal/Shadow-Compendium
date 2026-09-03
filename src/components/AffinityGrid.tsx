@@ -67,11 +67,12 @@ export default function AffinityGrid({
                         }
                     >
                         <span
-                            className={
+                            className={[
+                                "affinity-value",
                                 affinity?.discovered
-                                    ? "affinity-value revealed"
-                                    : "affinity-value"
-                            }
+                                    ? `revealed affinity-${affinity.value}`
+                                    : "hidden",
+                            ].join(" ")}
                         >
                             {displayValue}
                         </span>

@@ -1,11 +1,13 @@
 import { supabase } from "../supabase"
 import type { Shadow, Combatant } from "../types"
+import { rollDice } from "../utils/dice"
 
 
 export async function getCombatants() {
     const { data, error } = await supabase
         .from("combatants")
-        .select(`*,
+        .select(`
+            *,
             condition:conditions (
                 id,
                 name,
@@ -21,21 +23,121 @@ export async function getCombatants() {
 }
 
 export async function addCombatant(
-  shadow: Shadow
+    shadow: Shadow
 ) {
-  const { error } = await supabase
-    .from("combatants")
-    .insert({
-      shadow_id: shadow.id,
-      display_name: shadow.name,
-      combatant_type: "shadow",
-      initiative: 0,
-      hp: shadow.max_hp,
-      max_hp: shadow.max_hp,
-      position: 0
-    })
+    const combatState = await getCombatActive()
+    if (combatState.error) {
+        return combatState.error
+    }
 
-  return error
+    const initiative = getShadowInitiative(shadow, combatState.active)
+
+    const { data: combatants, error: getError } = await getCombatantPositions()
+
+    if (getError) {
+        return getError
+    }
+
+    const position = combatState.active
+        ? calculateCombatantInsertionPosition(combatants, initiative)
+        : 0
+
+    if (combatState.active) {
+        const shiftError = await shiftCombatantPositions(combatants, position)
+
+        if (shiftError) {
+            return shiftError
+        }
+    }
+
+    return insertShadowCombatant(shadow, initiative, position)
+}
+
+type CombatantPosition = Pick<
+    Combatant,
+    "id" | "initiative" | "position" | "combatant_type"
+>
+
+function getShadowInitiative(shadow: Shadow, combatActive: boolean) {
+    if (!combatActive) {
+        return 0
+    }
+
+    const agility = shadow.shadow_stats?.[0]?.agility ?? 0
+    return rollDice(2, 6) + agility
+}
+
+async function getCombatantPositions() {
+    return supabase
+        .from("combatants")
+        .select("id, initiative, position, combatant_type")
+        .order("position", { ascending: true })
+}
+
+function calculateCombatantInsertionPosition(
+    combatants: CombatantPosition[],
+    initiative: number
+) {
+    let position = combatants.length
+
+    for (const combatant of combatants) {
+        const existingInitiative = combatant.initiative ?? 0
+
+        if (initiative > existingInitiative) {
+            return combatant.position ?? 0
+        }
+
+        if (
+            initiative === existingInitiative &&
+            combatant.combatant_type === "player"
+        ) {
+            position = (combatant.position ?? 0) + 1
+        }
+    }
+
+    return position
+}
+
+async function shiftCombatantPositions(
+    combatants: CombatantPosition[],
+    position: number
+) {
+    for (const combatant of combatants) {
+        if ((combatant.position ?? 0) < position) {
+            continue
+        }
+
+        const { error } = await supabase
+            .from("combatants")
+            .update({ position: (combatant.position ?? 0) + 1 })
+            .eq("id", combatant.id)
+
+        if (error) {
+            return error
+        }
+    }
+
+    return null
+}
+
+async function insertShadowCombatant(
+    shadow: Shadow,
+    initiative: number,
+    position: number
+) {
+    const { error } = await supabase
+        .from("combatants")
+        .insert({
+            shadow_id: shadow.id,
+            display_name: shadow.name,
+            combatant_type: "shadow",
+            initiative,
+            hp: shadow.max_hp,
+            max_hp: shadow.max_hp,
+            position,
+        })
+
+    return error
 }
 
 export async function addPlayerCombatant(
@@ -94,7 +196,6 @@ export async function updateCombatant(
 
     return error
 }
-
 
 export async function updatePlayerCombatantInitiative(
     playerId: number,
@@ -163,8 +264,27 @@ export async function nextTurn() {
         return null
     }
 
-    const nextIndex =
-        (currentIndex + 1) % data.length
+    let nextIndex = -1
+
+    for (let offset = 1; offset <= data.length; offset++) {
+        const candidateIndex =
+            (currentIndex + offset) % data.length
+        const candidate = data[candidateIndex]
+
+        if (
+            candidate.combatant_type === "shadow" &&
+            (candidate.hp ?? 0) <= 0
+        ) {
+            continue
+        }
+
+        nextIndex = candidateIndex
+        break
+    }
+
+    if (nextIndex === -1) {
+        return null
+    }
 
     const { error: clearError } =
         await supabase
@@ -233,4 +353,86 @@ export async function updateCombatantCondition(
     if (error) {
         throw error
     }
+}
+
+export async function getCombatActive() {
+    const { data, error } = await supabase
+        .from("combat_state")
+        .select("is_active")
+        .eq("id", 1)
+        .maybeSingle()
+
+    return {
+        active: data?.is_active ?? false,
+        error,
+    }
+}
+
+export async function setCombatActive(active: boolean) {
+    const { error } = await supabase
+        .from("combat_state")
+        .update({
+            is_active: active,
+        })
+        .eq("id", 1)
+
+    return error
+}
+
+export async function endCombat() {
+    const stateError = await setCombatActive(false)
+
+    if (stateError) {
+        return stateError
+    }
+
+    const { error } = await supabase
+        .from("combatants")
+        .update({
+            is_current_turn: false,
+        })
+        .neq("id", 0)
+
+    return error
+}
+
+export async function getCombatLoot() {
+    const { data, error } = await supabase
+        .from("combat_state")
+        .select("loot_yen, loot_items")
+        .eq("id", 1)
+        .maybeSingle()
+
+    return {
+        yen: data?.loot_yen ?? 0,
+        items: data?.loot_items ?? [],
+        error,
+    }
+}
+
+export async function setCombatLoot(
+    yen: number,
+    items: string[]
+) {
+    const { error } = await supabase
+        .from("combat_state")
+        .update({
+            loot_yen: yen,
+            loot_items: items,
+        })
+        .eq("id", 1)
+
+    return error
+}
+
+export async function clearCombatLoot() {
+    const { error } = await supabase
+        .from("combat_state")
+        .update({
+            loot_yen: 0,
+            loot_items: [],
+        })
+        .eq("id", 1)
+
+    return error
 }

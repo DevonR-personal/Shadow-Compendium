@@ -362,6 +362,12 @@ button:hover {
   justify-self: center;
 }
 
+.player-health-spacer {
+  width: 70px;
+  height: 50px;
+  justify-self: center;
+}
+
 .health-heart {
   width: 60px;
   height: 55px;
@@ -624,36 +630,6 @@ button:hover {
   grid-column: span 10;
 }
 
-.affinity-mini-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 24px);
-  grid-template-rows: repeat(2, 20px);
-  border: 1px solid red;
-  border-radius: 2px;
-}
-
-.affinity-icon {
-  width: 24px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.affinity-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.affinity-icon.inactive {
-  opacity: 0.10;
-}
-
-.affinity-icon.active {
-  opacity: 1;
-}
-
 .shadow-name-button {
   border: none;
   background: none;
@@ -827,6 +803,49 @@ button:hover {
 
 .shadow-details-loot {
   text-align: right;
+}
+
+.combat-loot-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 12px 20px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(18, 18, 18, 0.96);
+  color: #f2f2f2;
+}
+
+.combat-loot-bar strong {
+  color: #f0c674;
+  white-space: nowrap;
+}
+
+.combat-loot-bar span {
+  overflow-wrap: anywhere;
+}
+
+.combat-loot-dismiss {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.combat-loot-dismiss:hover {
+  color: #fff;
 }
 
 
@@ -1010,10 +1029,20 @@ button:hover {
   font-size: 0.68rem;
 }
 
+.affinity-value {
+  text-shadow:
+    2px 2px 4px #000,
+    -2px -2px 4px #000,
+    2px -2px 4px #000,
+    -2px 2px 4px #000;
+}
+
 .affinity-value.revealed {
-  color: white;
   font-weight: bold;
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+}
+
+.affinity-value.hidden {
+  color: #aaa;
 }
 
 .shadow-offensive-icons {
