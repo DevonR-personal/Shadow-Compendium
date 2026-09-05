@@ -22,6 +22,43 @@ export async function getCombatants() {
     }
 }
 
+export async function damageAllShadowCombatants(
+    amount: number,
+    shadows: Shadow[]
+) {
+    const result = await getCombatants()
+
+    if (result.error) {
+        return result.error
+    }
+
+    const shadowMap = new Map(shadows.map((shadow) => [shadow.id, shadow]))
+
+    for (const combatant of result.data) {
+        if (
+            combatant.combatant_type !== "shadow" ||
+            combatant.shadow_id === null
+        ) {
+            continue
+        }
+
+        const armor = shadowMap.get(combatant.shadow_id)?.armor ?? 0
+        const damage = Math.max(1, amount - armor)
+        const currentHP = combatant.hp ?? 0
+        const nextHP = Math.max(
+            0,
+            Math.min(combatant.max_hp ?? currentHP, currentHP - damage)
+        )
+        const error = await updateCombatant(combatant.id, { hp: nextHP })
+
+        if (error) {
+            return error
+        }
+    }
+
+    return null
+}
+
 export async function addCombatant(
     shadow: Shadow
 ) {

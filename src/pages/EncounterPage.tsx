@@ -14,6 +14,7 @@ import { AFFINITY_ORDER } from "../constants/affinities"
 import { getConditions } from "../services/conditions"
 import CombatLootBar from "../components/CombatLootBar"
 import CombatantRow from "../components/CombatantRow"
+import PlayerQuickReference from "../components/PlayerQuickReference"
 import type { TurnHighlights } from "../utils/turnHighlights"
 import {
     applyModifierDelta,
@@ -363,9 +364,9 @@ export default function EncounterPage({
                                 : "combatant-header gm-combatant-header"
                         }
                     >
-                        <span>INIT</span>
+                        <span />
                         <span>NAME</span>
-                        <span>STATUS</span>
+                        <span />
                         <span>Dam</span>
                         <span>Arm</span>
                         <span>Acc</span>
@@ -402,6 +403,7 @@ export default function EncounterPage({
 
                 </div>
             )}
+            {playerView && <PlayerQuickReference />}
             <CombatLootBar
                 yen={lootYen}
                 items={lootItems}

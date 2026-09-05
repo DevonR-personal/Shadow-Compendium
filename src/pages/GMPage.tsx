@@ -1,11 +1,13 @@
 import ShadowLibrary from "./ShadowLibrary"
 import EncounterPage from "./EncounterPage"
 import { useState } from "react"
-import type { Shadow } from "../types"
+import type { Player, Shadow } from "../types"
 import ShadowDetailsPanel from "./ShadowDetailsPanel"
 import { updateAffinityDiscovery } from "../services/affinities"
+import { damageAllShadowCombatants } from "../services/combatants"
 import { useCombatController } from "../hooks/useCombatController"
 import type { TurnHighlights } from "../utils/turnHighlights"
+import PlayerSkillEditor from "../components/PlayerSkillEditor"
 
 type GMPageProps = {
     shadows: Shadow[]
@@ -44,6 +46,8 @@ export default function GMPage({
         useState<Shadow | null>(null)
     const [selectedCombatant, setSelectedCombatant] =
         useState<import("../types").Combatant | null>(null)
+    const [selectedPlayer, setSelectedPlayer] =
+        useState<Player | null>(null)
     const {
         players,
         playerRolls,
@@ -96,6 +100,22 @@ export default function GMPage({
             console.error(error)
         }
     }
+
+    async function handleAllOutAttack() {
+        const amount = window.prompt("Damage all shadows for how much?")
+        const damage = amount === null ? Number.NaN : Number(amount)
+
+        if (!Number.isFinite(damage) || damage <= 0) {
+            return
+        }
+
+        const error = await damageAllShadowCombatants(damage, shadows)
+
+        if (error) {
+            console.error(error)
+        }
+    }
+
     return (
         <main className="gm-layout">
 
@@ -142,27 +162,38 @@ export default function GMPage({
 
 
                     {libraryTab === "players" && (
-                        <>
-                            <h2>Players</h2>
-
-                            <ul>
+                        selectedPlayer ? (
+                            <PlayerSkillEditor
+                                player={selectedPlayer}
+                                onClose={() => setSelectedPlayer(null)}
+                            />
+                        ) : (
+                            <div className="player-library-table">
                                 {players.map((player) => (
-                                    <li key={player.id}>
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked={player.in_initiative}
-                                                onChange={() =>
-                                                    togglePlayerInitiative(player)
-                                                }
-                                            />
-
-                                            {player.name}
-                                        </label>
-                                    </li>
+                                    <div
+                                        className="player-library-row"
+                                        key={player.id}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={player.in_initiative}
+                                            onChange={() =>
+                                                void togglePlayerInitiative(player)
+                                            }
+                                            aria-label={`Include ${player.name} in initiative`}
+                                        />
+                                        <span>{player.name}</span>
+                                        <button
+                                            type="button"
+                                            className="player-edit-button"
+                                            onClick={() => setSelectedPlayer(player)}
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
                                 ))}
-                            </ul>
-                        </>
+                            </div>
+                        )
                     )}
 
                 </div>
@@ -199,15 +230,24 @@ export default function GMPage({
 
                     <button
                         type="button"
+                        onClick={() => void handleAllOutAttack()}
+                        disabled={!combatActive}
+                    >
+                        All-Out Attack
+                    </button>
+
+                    <button
+                        type="button"
                         onClick={handleResetCombat}
                     >
                         Reset Combat
                     </button>
 
-                    <span className="turn-number">
-                        Turn Number: {turnNumber}
-                    </span>
                 </nav>
+
+                <span className="turn-number">
+                    Turn Number: {turnNumber}
+                </span>
 
                 <EncounterPage
                     shadows={shadows}

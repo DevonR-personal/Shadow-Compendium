@@ -84,6 +84,8 @@ export type Player = {
   id: number
   name: string
   in_initiative: boolean
+  weapon1_id: number | null
+  weapon2_id: number | null
 }
 
 export type Skill = {
@@ -97,6 +99,14 @@ export type Skill = {
   is_unique: boolean
 }
 
+export type PlayerSkill = {
+  id: number
+  player_id: number
+  skill_id: number
+  sort_order: number
+  skill: Skill
+}
+
 export type UpdatedShadow = {
   id: number
   name: string
@@ -104,4 +114,28 @@ export type UpdatedShadow = {
   armor: number | null
   arcana: string | null
   loot_item: string | null
+}
+
+export type PlayerStats = {
+  id: number
+  player_id: number
+  athleticism: number
+  proficiency: number
+  guts: number
+  knowledge: number
+  charm: number
+  strength: number
+  agility: number
+  endurance: number
+  magic: number
+  luck: number
+  max_luck: number
+}
+
+export type Weapon = {
+  id: number
+  name: string
+  element: string | null
+  description: string | null
+  uses_stat: string | null
 }

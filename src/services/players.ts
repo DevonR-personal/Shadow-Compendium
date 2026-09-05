@@ -4,7 +4,7 @@ import type { Player } from "../types"
 export async function getPlayers() {
   const { data, error } = await supabase
     .from("players")
-    .select("id, name, in_initiative")
+    .select("id, name, in_initiative, weapon1_id, weapon2_id")
     .order("name")
 
   return {
@@ -23,7 +23,7 @@ export async function updatePlayerInitiative(
       in_initiative: inInitiative,
     })
     .eq("id", playerId)
-    .select("id, name, in_initiative")
+    .select("id, name, in_initiative, weapon1_id, weapon2_id")
     .single()
 
   return {
