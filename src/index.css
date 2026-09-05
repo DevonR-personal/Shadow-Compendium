@@ -323,7 +323,7 @@ button:hover {
 
 .gm-library-panel {
   display: flex;
-  width: max-content;
+  width: 289px;
   max-width: 100%;
   min-width: 0;
   flex-direction: column;
