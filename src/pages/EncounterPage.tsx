@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
     getCombatants,
     getCombatLoot,
@@ -15,6 +15,7 @@ import { getConditions } from "../services/conditions"
 import CombatLootBar from "../components/CombatLootBar"
 import CombatantRow from "../components/CombatantRow"
 import PlayerQuickReference from "../components/PlayerQuickReference"
+import WeaknessCutin from "../components/WeaknessCutin"
 import type { TurnHighlights } from "../utils/turnHighlights"
 import {
     applyModifierDelta,
@@ -49,6 +50,20 @@ export default function EncounterPage({
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [turnNumber, setTurnNumber] = useState(0)
+    const [cutinPlayToken, setCutinPlayToken] = useState(0)
+    const [cutinPlaying, setCutinPlaying] = useState(false)
+    const cutinChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+    const cutinBroadcastRef = useRef<BroadcastChannel | null>(null)
+    const lastCutinEventRef = useRef<string | null>(null)
+    const finishCutin = useCallback(() => {
+        setCutinPlaying(false)
+    }, [])
+    const playCutinEvent = useCallback((eventId: string) => {
+        if (lastCutinEventRef.current === eventId) return
+        lastCutinEventRef.current = eventId
+        setCutinPlayToken((token) => token + 1)
+        setCutinPlaying(true)
+    }, [])
     const [conditions, setConditions] = useState<
         Awaited<ReturnType<typeof getConditions>>["data"]
     >([])
@@ -170,6 +185,33 @@ export default function EncounterPage({
             window.clearInterval(lootRefreshInterval)
         }
     }, [onCombatLootChange, onRefreshShadows])
+
+    useEffect(() => {
+        const localBroadcast = new BroadcastChannel("shadow-tracker-weakness-cutin")
+        localBroadcast.onmessage = (event: MessageEvent<{ eventId?: string }>) => {
+            if (event.data.eventId) playCutinEvent(event.data.eventId)
+        }
+        cutinBroadcastRef.current = localBroadcast
+
+        const cutinChannel = supabase
+            .channel("encounter-weakness-cutin", {
+                config: { broadcast: { self: false } },
+            })
+            .on("broadcast", { event: "play" }, (message) => {
+                const eventId = message.payload?.eventId
+                if (typeof eventId === "string") playCutinEvent(eventId)
+            })
+            .subscribe()
+
+        cutinChannelRef.current = cutinChannel
+
+        return () => {
+            cutinChannelRef.current = null
+            cutinBroadcastRef.current = null
+            localBroadcast.close()
+            supabase.removeChannel(cutinChannel)
+        }
+    }, [playCutinEvent])
 
     useEffect(() => {
         const currentCombatant =
@@ -341,6 +383,17 @@ export default function EncounterPage({
         }
     }
 
+    function triggerWeaknessCutin() {
+        const eventId = window.crypto.randomUUID()
+        playCutinEvent(eventId)
+        cutinBroadcastRef.current?.postMessage({ eventId })
+        void cutinChannelRef.current?.send({
+            type: "broadcast",
+            event: "play",
+            payload: { character: "Ruferu", eventId },
+        })
+    }
+
     return (
         <main className={playerView ? "app player-app" : "app"}>
             {playerView && (
@@ -367,9 +420,9 @@ export default function EncounterPage({
                         <span />
                         <span>NAME</span>
                         <span />
-                        <span>Dam</span>
-                        <span>Arm</span>
-                        <span>Acc</span>
+                        <span className="modifier-header" title="Damage">{"\u2694\uFE0E"}</span>
+                        <span className="modifier-header" title="Armor">{"\u{1F6E1}\uFE0E"}</span>
+                        <span className="modifier-header" title="Accuracy">{"\u25CE"}</span>
                         <span />
                         {playerView && AFFINITY_ORDER.map((affinity) => (
                             <span
@@ -377,7 +430,7 @@ export default function EncounterPage({
                                 className={`affinity-header ${affinity}`}
                             />
                         ))}
-                        <span></span>
+                        {playerView ? <span /> : <><span /><span /><span /></>}
                     </div>
 
                     {combatants.map((combatant) => (
@@ -394,6 +447,7 @@ export default function EncounterPage({
                             onToggleDowned={handleToggleDowned}
                             onConditionChange={handleConditionChange}
                             onModifierChange={handleModifierChange}
+                            onTriggerCutin={triggerWeaknessCutin}
                             onRemove={handleRemoveCombatant}
                             highlighted={
                                 combatant.id === highlightedPlayerCombatantId
@@ -402,6 +456,12 @@ export default function EncounterPage({
                     ))}
 
                 </div>
+            )}
+            {cutinPlaying && (
+                <WeaknessCutin
+                    playToken={cutinPlayToken}
+                    onFinish={finishCutin}
+                />
             )}
             {playerView && <PlayerQuickReference />}
             <CombatLootBar

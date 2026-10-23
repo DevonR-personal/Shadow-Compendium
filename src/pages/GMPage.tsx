@@ -42,6 +42,7 @@ export default function GMPage({
 }: Readonly<GMPageProps>) {
     const [libraryTab, setLibraryTab] =
         useState<"shadows" | "players">("shadows")
+    const [libraryCollapsed, setLibraryCollapsed] = useState(false)
     const [selectedShadow, setSelectedShadow] =
         useState<Shadow | null>(null)
     const [selectedCombatant, setSelectedCombatant] =
@@ -117,9 +118,9 @@ export default function GMPage({
     }
 
     return (
-        <main className="gm-layout">
+        <main className={libraryCollapsed ? "gm-layout library-collapsed" : "gm-layout"}>
 
-            <section className="gm-library-panel">
+            {!libraryCollapsed && <section className="gm-library-panel">
 
                 <nav className="library-tabs">
                     <button
@@ -198,7 +199,17 @@ export default function GMPage({
 
                 </div>
 
-            </section>
+            </section>}
+
+            <button
+                type="button"
+                className="library-collapse-toggle"
+                onClick={() => setLibraryCollapsed((collapsed) => !collapsed)}
+                aria-label={libraryCollapsed ? "Show library" : "Hide library"}
+                title={libraryCollapsed ? "Show library" : "Hide library"}
+            >
+                {libraryCollapsed ? "›" : "‹"}
+            </button>
 
 
             <section className="gm-combat-panel">

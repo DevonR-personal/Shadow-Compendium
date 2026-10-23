@@ -25,27 +25,27 @@ export default function PlayerSkillEditor({
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
-    async function loadData() {
-        const [playerSkillsResult, skillsResult] = await Promise.all([
-            getPlayerSkills(player.id),
-            getSkills(),
-        ])
+    useEffect(() => {
+        async function loadData() {
+            const [playerSkillsResult, skillsResult] = await Promise.all([
+                getPlayerSkills(player.id),
+                getSkills(),
+            ])
 
-        if (playerSkillsResult.error || skillsResult.error) {
-            setError(
-                playerSkillsResult.error?.message ??
-                skillsResult.error?.message ??
-                "Unable to load skills."
-            )
-        } else {
-            setPlayerSkills(playerSkillsResult.data)
-            setSkills(skillsResult.data)
+            if (playerSkillsResult.error || skillsResult.error) {
+                setError(
+                    playerSkillsResult.error?.message ??
+                    skillsResult.error?.message ??
+                    "Unable to load skills."
+                )
+            } else {
+                setPlayerSkills(playerSkillsResult.data)
+                setSkills(skillsResult.data)
+            }
+
+            setLoading(false)
         }
 
-        setLoading(false)
-    }
-
-    useEffect(() => {
         void loadData()
     }, [player.id])
 

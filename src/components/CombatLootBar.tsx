@@ -28,7 +28,6 @@ export default function CombatLootBar({
 
             {items.length > 0 && (
                 <span>
-                    {" — "}
                     {items.join(", ")}
                 </span>
             )}

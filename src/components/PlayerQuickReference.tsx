@@ -10,6 +10,8 @@ type PlayerQuickReferenceProps = Readonly<{
     readonly onError?: (message: string) => void
 }>
 
+const SELECTED_PLAYER_STORAGE_KEY = "shadow-tracker:selected-player-id"
+
 type StatKey = keyof Pick<
     PlayerStats,
     "athleticism" | "proficiency" | "guts" | "knowledge" | "charm"
@@ -162,6 +164,11 @@ function PlayerSkillCards({
                     <div className="player-skill-card" key={entry.id}>
                         <div className="player-skill-card-summary">
                             <strong>{entry.skill.name}</strong>
+                            <span className={isShadowDerivedStat(entry.skill.uses_stat)
+                                ? "shadow-derived-modifier"
+                                : ""}>
+                                {formatModifier(modifier)}
+                            </span>
                             <span>
                                 {affinityImage(entry.skill.affinity) ? (
                                     <img
@@ -170,11 +177,6 @@ function PlayerSkillCards({
                                         alt={affinity ?? ""}
                                     />
                                 ) : "—"}
-                            </span>
-                            <span className={isShadowDerivedStat(entry.skill.uses_stat)
-                                ? "shadow-derived-modifier"
-                                : ""}>
-                                {formatModifier(modifier)}
                             </span>
                         </div>
                         <div className="player-skill-card-description">
@@ -191,12 +193,22 @@ export default function PlayerQuickReference({
     onError,
 }: PlayerQuickReferenceProps) {
     const [players, setPlayers] = useState<Player[]>([])
-    const [selectedPlayerId, setSelectedPlayerId] = useState<number | "">("")
+    const [selectedPlayerId, setSelectedPlayerId] = useState<number | "">(() => {
+        const savedPlayerId = window.localStorage.getItem(
+            SELECTED_PLAYER_STORAGE_KEY
+        )
+        const parsedPlayerId = savedPlayerId === null
+            ? Number.NaN
+            : Number(savedPlayerId)
+
+        return Number.isInteger(parsedPlayerId) ? parsedPlayerId : ""
+    })
     const [stats, setStats] = useState<PlayerStats | null>(null)
     const [playerSkills, setPlayerSkills] = useState<PlayerSkill[]>([])
     const [weapons, setWeapons] = useState<Weapon[]>([])
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState<string | null>(null)
+    const [collapsed, setCollapsed] = useState(false)
 
     useEffect(() => {
         async function loadPlayers() {
@@ -220,6 +232,17 @@ export default function PlayerQuickReference({
 
         void loadPlayers()
     }, [onError])
+
+    useEffect(() => {
+        if (selectedPlayerId === "") {
+            return
+        }
+
+        window.localStorage.setItem(
+            SELECTED_PLAYER_STORAGE_KEY,
+            String(selectedPlayerId)
+        )
+    }, [selectedPlayerId])
 
     useEffect(() => {
         if (selectedPlayerId === "") {
@@ -292,7 +315,20 @@ export default function PlayerQuickReference({
     }
 
     return (
-        <section className="player-quick-reference">
+        <section
+            className={collapsed
+                ? "player-quick-reference collapsed"
+                : "player-quick-reference"}
+        >
+            <button
+                type="button"
+                className="player-reference-toggle"
+                onClick={() => setCollapsed((value) => !value)}
+                aria-expanded={!collapsed}
+                aria-label={collapsed ? "Show player reference" : "Hide player reference"}
+            >
+                {collapsed ? "▲" : "▼"}
+            </button>
             <div className="player-quick-reference-header">
                 <h2>{selectedPlayer?.name}</h2>
                 <select

@@ -1,7 +1,6 @@
 import type { Combatant, Shadow } from "../types"
 import type { getConditions } from "../services/conditions"
 import {
-    formatModifier,
     type ModifierKey,
 } from "../utils/modifiers"
 import AffinityGrid from "./AffinityGrid"
@@ -24,6 +23,7 @@ type CombatantRowProps = {
         key: ModifierKey,
         value: number
     ) => void
+    readonly onTriggerCutin: () => void
     readonly onRemove: (id: number) => void
     readonly highlighted: boolean
 }
@@ -99,72 +99,120 @@ function CombatantStatus({
     )
 }
 
-function getModifierOptions(modifierKey: ModifierKey) {
-    if (modifierKey === "accuracy_mod") {
-        return [-2, 2]
+function getModifierOptions(modifierKey: ModifierKey, level: number | null) {
+    const max = modifierKey === "accuracy_mod" ? 2 : 12
+    const alternating: number[] = []
+
+    for (let step = 2; step <= max; step += 2) {
+        alternating.push(step, -step)
     }
 
-    return Array.from({ length: 13 }, (_, index) => -12 + index * 2)
-        .filter((entry) => entry !== 0)
+    const tl = (level ?? 0) * 2
+
+    if (tl < 2 || tl > max) {
+        return alternating
+    }
+
+    return [
+        tl,
+        -tl,
+        ...alternating.filter((entry) => Math.abs(entry) !== tl),
+    ]
 }
 
 function getModifierCellStyle(value: number, turns: number) {
     if (value === 0 || turns === 0) {
         return {
-            background: "rgba(27, 30, 35, 0.9)",
-            borderColor: "rgba(255, 255, 255, 0.12)",
+            background: "transparent",
+            borderColor: "transparent",
         }
     }
 
-    const intensity = turns === 3 ? 1.0 : turns === 2 ? 0.65 : 0.35
     const isPositive = value > 0
 
     return {
         background: isPositive
-            ? `rgba(51, 102, 255, ${intensity * 0.9})`
-            : `rgba(255, 68, 68, ${intensity * 0.9})`,
+            ? "rgba(10, 110, 72, 0.9)"
+            : "rgba(150, 38, 38, 0.9)",
         borderColor: isPositive
-            ? "rgba(100, 180, 255, 1)"
+            ? "rgba(15, 231, 148, 0.7)"
             : "rgba(255, 150, 150, 1)",
     }
 }
 
+function formatArrowModifier(value: number) {
+    return `${value > 0 ? "▲" : "▼"} ${Math.abs(value)}`
+}
+
+function ModifierFadeBar({
+    turns,
+    debuff,
+}: {
+    readonly turns: number
+    readonly debuff: boolean
+}) {
+    return (
+        <span
+            className={debuff
+                ? "modifier-fade-bar modifier-fade-bar-debuff"
+                : "modifier-fade-bar"}
+            style={{ height: `${(Math.min(turns, 3) / 3) * 100}%` }}
+        />
+    )
+}
+
 function ModifierCell({
     combatant,
+    level,
     modifierKey,
     playerView,
     onModifierChange,
 }: Pick<CombatantRowProps, "combatant" | "playerView" | "onModifierChange"> & {
+    readonly level: number | null
     readonly modifierKey: ModifierKey
 }) {
     const value = combatant[modifierKey] ?? 0
     const turns = (combatant[`${modifierKey}_turns` as keyof Combatant] as number | null | undefined) ?? 0
-    const displayValue = value === 0 || turns === 0 ? "-" : formatModifier(value)
+    const isActive = value !== 0 && turns !== 0
+    const displayValue = isActive ? formatArrowModifier(value) : "-"
+    const pulseClass = isActive && turns === 1 ? " modifier-pulse" : ""
 
     const cellStyle = getModifierCellStyle(value, turns)
-    const options = getModifierOptions(modifierKey)
+    const options = getModifierOptions(modifierKey, level)
 
     if (playerView) {
         return (
-            <span className="modifier-value" style={cellStyle}>
-                {displayValue}
+            <span
+                className={`modifier-value${pulseClass}${isActive ? "" : " modifier-blank"}`}
+                style={isActive ? cellStyle : undefined}
+            >
+                {isActive && displayValue}
+                {isActive && <ModifierFadeBar turns={turns} debuff={value < 0} />}
             </span>
         )
     }
 
     return (
-        <div className="modifier-cell" style={cellStyle}>
+        <div
+            className={`modifier-cell${pulseClass}${isActive ? "" : " modifier-blank"}`}
+            style={isActive ? cellStyle : undefined}
+        >
+            {isActive && (
+                <span className="modifier-current-value">
+                    {displayValue}
+                </span>
+            )}
+            {isActive && <ModifierFadeBar turns={turns} debuff={value < 0} />}
             <select
                 className="modifier-select"
                 value={value === 0 || turns === 0 ? "" : String(value)}
                 onChange={(event) => onModifierChange(combatant, modifierKey, Number(event.target.value))}
                 aria-label={`Set ${modifierKey}`}
-                style={{ background: "transparent" }}
             >
                 <option value="">—</option>
                 {options.map((entry) => (
                     <option key={entry} value={String(entry)}>
-                        {entry > 0 ? `+${entry}` : entry}
+                        {formatArrowModifier(entry)}
                     </option>
                 ))}
             </select>
@@ -239,6 +287,7 @@ export default function CombatantRow({
     onToggleDowned,
     onConditionChange,
     onModifierChange,
+    onTriggerCutin,
     onRemove,
     highlighted,
 }: CombatantRowProps) {
@@ -279,18 +328,21 @@ export default function CombatantRow({
 
                 <ModifierCell
                     combatant={combatant}
+                    level={shadow?.level ?? null}
                     modifierKey="damage_mod"
                     playerView={playerView}
                     onModifierChange={onModifierChange}
                 />
                 <ModifierCell
                     combatant={combatant}
+                    level={shadow?.level ?? null}
                     modifierKey="armor_mod"
                     playerView={playerView}
                     onModifierChange={onModifierChange}
                 />
                 <ModifierCell
                     combatant={combatant}
+                    level={shadow?.level ?? null}
                     modifierKey="accuracy_mod"
                     playerView={playerView}
                     onModifierChange={onModifierChange}
@@ -307,6 +359,18 @@ export default function CombatantRow({
                     playerView={playerView}
                     onDamage={onDamage}
                 />
+
+                {!playerView && combatant.combatant_type === "player" ? (
+                    <button
+                        className="cutin-trigger"
+                        type="button"
+                        onClick={onTriggerCutin}
+                        aria-label={`Play Wiz weakness cut-in for ${combatant.display_name}`}
+                        title="Play Wiz weakness cut-in"
+                    >
+                        ✦
+                    </button>
+                ) : !playerView ? <span className="cutin-trigger-spacer" /> : null}
 
                 {!playerView && (
                     <button
