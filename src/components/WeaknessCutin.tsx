@@ -2,8 +2,14 @@ import { useEffect, useRef } from "react"
 
 type WeaknessCutinProps = {
     readonly playToken: number
+    readonly character: "Wiz" | "Nik"
     readonly onFinish: () => void
 }
+
+const CUTIN_SOURCES = {
+    Wiz: "/cutin/Wiz_cutin.mp4",
+    Nik: "/cutin/Nik_cutin.mp4",
+} as const
 
 function smoothstep(edge0: number, edge1: number, value: number) {
     const amount = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)))
@@ -12,6 +18,7 @@ function smoothstep(edge0: number, edge1: number, value: number) {
 
 export default function WeaknessCutin({
     playToken,
+    character,
     onFinish,
 }: WeaknessCutinProps) {
     const videoRef = useRef<HTMLVideoElement>(null)
@@ -84,13 +91,13 @@ export default function WeaknessCutin({
             activeVideo.removeEventListener("play", startDrawing)
             window.cancelAnimationFrame(animationFrame)
         }
-    }, [onFinish, playToken])
+    }, [character, onFinish, playToken])
 
     return (
         <div className="weakness-cutin">
             <video
                 ref={videoRef}
-                src="/cutin/Wiz_cutin.mp4"
+                src={CUTIN_SOURCES[character]}
                 autoPlay
                 muted
                 playsInline

@@ -23,9 +23,10 @@ type CombatantRowProps = {
         key: ModifierKey,
         value: number
     ) => void
-    readonly onTriggerCutin: () => void
+    readonly onTriggerCutin: (character: "Wiz" | "Nik") => void
     readonly onRemove: (id: number) => void
     readonly highlighted: boolean
+    readonly stripeIndex: number
 }
 
 function CombatantName({
@@ -290,6 +291,7 @@ export default function CombatantRow({
     onTriggerCutin,
     onRemove,
     highlighted,
+    stripeIndex,
 }: CombatantRowProps) {
     return (
         <>
@@ -301,6 +303,7 @@ export default function CombatantRow({
                         : "gm-combatant-row",
                     combatant.is_current_turn ? "current-turn" : "",
                     highlighted ? "turn-highlight" : "",
+                    stripeIndex % 2 === 0 ? "combatant-row-even" : "combatant-row-odd",
                 ].join(" ")}
                 key={combatant.id}
             >
@@ -364,9 +367,13 @@ export default function CombatantRow({
                     <button
                         className="cutin-trigger"
                         type="button"
-                        onClick={onTriggerCutin}
-                        aria-label={`Play Wiz weakness cut-in for ${combatant.display_name}`}
-                        title="Play Wiz weakness cut-in"
+                        onClick={() => onTriggerCutin(
+                            combatant.display_name.toLowerCase().includes("nikolas")
+                                ? "Nik"
+                                : "Wiz"
+                        )}
+                        aria-label={`Play ${combatant.display_name.toLowerCase().includes("nikolas") ? "Nik" : "Wiz"} weakness cut-in for ${combatant.display_name}`}
+                        title={`Play ${combatant.display_name.toLowerCase().includes("nikolas") ? "Nik" : "Wiz"} weakness cut-in`}
                     >
                         ✦
                     </button>

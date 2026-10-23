@@ -52,15 +52,17 @@ export default function EncounterPage({
     const [turnNumber, setTurnNumber] = useState(0)
     const [cutinPlayToken, setCutinPlayToken] = useState(0)
     const [cutinPlaying, setCutinPlaying] = useState(false)
+    const [cutinCharacter, setCutinCharacter] = useState<"Wiz" | "Nik">("Wiz")
     const cutinChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
     const cutinBroadcastRef = useRef<BroadcastChannel | null>(null)
     const lastCutinEventRef = useRef<string | null>(null)
     const finishCutin = useCallback(() => {
         setCutinPlaying(false)
     }, [])
-    const playCutinEvent = useCallback((eventId: string) => {
+    const playCutinEvent = useCallback((eventId: string, character: "Wiz" | "Nik") => {
         if (lastCutinEventRef.current === eventId) return
         lastCutinEventRef.current = eventId
+        setCutinCharacter(character)
         setCutinPlayToken((token) => token + 1)
         setCutinPlaying(true)
     }, [])
@@ -188,8 +190,10 @@ export default function EncounterPage({
 
     useEffect(() => {
         const localBroadcast = new BroadcastChannel("shadow-tracker-weakness-cutin")
-        localBroadcast.onmessage = (event: MessageEvent<{ eventId?: string }>) => {
-            if (event.data.eventId) playCutinEvent(event.data.eventId)
+        localBroadcast.onmessage = (event: MessageEvent<{ eventId?: string; character?: "Wiz" | "Nik" }>) => {
+            if (event.data.eventId) {
+                playCutinEvent(event.data.eventId, event.data.character ?? "Wiz")
+            }
         }
         cutinBroadcastRef.current = localBroadcast
 
@@ -199,7 +203,8 @@ export default function EncounterPage({
             })
             .on("broadcast", { event: "play" }, (message) => {
                 const eventId = message.payload?.eventId
-                if (typeof eventId === "string") playCutinEvent(eventId)
+                const character = message.payload?.character === "Nik" ? "Nik" : "Wiz"
+                if (typeof eventId === "string") playCutinEvent(eventId, character)
             })
             .subscribe()
 
@@ -383,14 +388,14 @@ export default function EncounterPage({
         }
     }
 
-    function triggerWeaknessCutin() {
+    function triggerWeaknessCutin(character: "Wiz" | "Nik") {
         const eventId = window.crypto.randomUUID()
-        playCutinEvent(eventId)
-        cutinBroadcastRef.current?.postMessage({ eventId })
+        playCutinEvent(eventId, character)
+        cutinBroadcastRef.current?.postMessage({ eventId, character })
         void cutinChannelRef.current?.send({
             type: "broadcast",
             event: "play",
-            payload: { character: "Ruferu", eventId },
+            payload: { character, eventId },
         })
     }
 
@@ -433,7 +438,7 @@ export default function EncounterPage({
                         {playerView ? <span /> : <><span /><span /><span /></>}
                     </div>
 
-                    {combatants.map((combatant) => (
+                    {combatants.map((combatant, index) => (
                         <CombatantRow
                             key={combatant.id}
                             combatant={combatant}
@@ -452,6 +457,7 @@ export default function EncounterPage({
                             highlighted={
                                 combatant.id === highlightedPlayerCombatantId
                             }
+                            stripeIndex={index}
                         />
                     ))}
 
@@ -460,6 +466,7 @@ export default function EncounterPage({
             {cutinPlaying && (
                 <WeaknessCutin
                     playToken={cutinPlayToken}
+                    character={cutinCharacter}
                     onFinish={finishCutin}
                 />
             )}

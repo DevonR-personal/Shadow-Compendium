@@ -845,6 +845,14 @@ button:hover {
   font-size: 0.8rem;
 }
 
+.combatant-row-even:not(.current-turn) {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.combatant-row-odd:not(.current-turn) {
+  background: rgba(255, 255, 255, 0.075);
+}
+
 .combatant-name-button {
   appearance: none;
   border: none;
