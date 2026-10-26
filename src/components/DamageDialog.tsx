@@ -15,6 +15,20 @@ type DamageDialogProps = {
     ) => void
 }
 
+const TYPE_COLORS: Record<NonNullable<DamageType>, string> = {
+    melee: "#ff9a2e",
+    ranged: "#f2c14e",
+    fire: "#ff5a2e",
+    ice: "#3fa9ff",
+    wind: "#4cd964",
+    electric: "#ffe033",
+    psychic: "#c05cff",
+    nuclear: "#37e0e0",
+    bless: "#f0d9a0",
+    curse: "#ff3b52",
+    heal: "#0fe794",
+}
+
 export default function DamageDialog({
     combatant,
     sources,
@@ -38,6 +52,7 @@ export default function DamageDialog({
                 className="damage-dialog"
                 open
                 aria-label={`Damage ${combatant.display_name}`}
+                style={{ "--type-color": damageType ? TYPE_COLORS[damageType] : "#bbb" } as React.CSSProperties}
             >
                 <form onSubmit={submit}>
                     <div className="damage-dialog-row">

@@ -971,10 +971,16 @@ button:hover {
 }
 
 .player-health-bar {
+  position: relative;
   width: 76px;
   height: 40px;
-  overflow: hidden;
   justify-self: center;
+}
+
+.health-bar-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .player-health-spacer {
@@ -1001,7 +1007,66 @@ button:hover {
 
 .health-heart-green {
   fill: #0fe794;
-  transition: none;
+  transition: transform 0.35s ease-out;
+}
+
+.health-heart-trail {
+  fill: #f2f2f2;
+  transition: transform 0.5s ease-in 0.45s;
+}
+
+.health-pop {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  z-index: 5;
+  pointer-events: none;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+  paint-order: stroke;
+  -webkit-text-stroke: 3px #000;
+  animation: health-pop-rise 1.1s ease-out forwards;
+}
+
+.health-pop-damage {
+  color: #ff5a5a;
+}
+
+.health-pop-heal {
+  color: #0fe794;
+}
+
+@keyframes health-pop-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -2px) scale(1.2);
+  }
+  30% {
+    transform: translate(-50%, -6px) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .health-heart-green,
+  .health-heart-trail {
+    transition: none;
+  }
+
+  .health-pop {
+    animation-duration: 0.01s;
+  }
 }
 
 .health-heart-outline {
@@ -1197,8 +1262,9 @@ button:hover {
 
 .damage-type-option.selected {
   opacity: 1;
-  border-color: #eee;
+  border-color: var(--type-color, #eee);
   background: #262626;
+  box-shadow: 0 0 8px var(--type-color, transparent);
   transform: scale(1.1);
 }
 

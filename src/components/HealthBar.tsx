@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 type HealthBarProps = {
     readonly hp: number | null
     readonly maxHp: number | null
@@ -9,10 +11,47 @@ const OUTER_HEART =
 const INNER_HEART =
     "m 7.0398016,33.199797 c 0,-0.09259 0.514553,-0.899322 1.143451,-1.792732 0.628897,-0.893411 1.8986504,-2.695946 2.8216734,-4.005633 0.923022,-1.309688 2.135893,-3.036094 2.695269,-3.836458 l 1.017047,-1.455209 -1.259032,-1.114313 -1.259033,-1.114314 0.463021,-0.01017 c 0.662805,-0.01455 0.576594,-0.282403 -0.433987,-1.34836 -0.49083,-0.517725 -1.156979,-1.4599 -1.48033,-2.093721 l -0.587912,-1.152402 0.108471,-1.742737 0.10847,-1.742738 0.757352,-1.575134 0.757353,-1.5751339 1.741281,-1.732158 1.741281,-1.732157 1.5875,-0.779585 1.5875,-0.779584 1.739522,-0.107546 1.739521,-0.107546 0.752441,0.647223 0.752442,0.647222 0.02158,0.953521 0.02158,0.953521 0.606984,-0.396631 c 1.488504,-0.972656 3.199457,-1.888305 4.4201,-2.3655 l 1.322916,-0.517179 h 2.562316 2.56231 l 0.80501,0.771246 c 0.44275,0.424186 0.94143,1.184622 1.10818,1.68986 l 0.30317,0.918613 -0.12345,1.882016 -0.12345,1.8820149 -0.68286,1.322917 c -1.51293,2.931015 -4.62644,5.316125 -22.372057,17.138096 -5.6970804,3.795344 -6.9256284,4.552928 -6.9256284,4.270686 z"
 
+type HealthPop = {
+    readonly id: number
+    readonly delta: number
+}
+
+type HealthTracker = {
+    readonly hp: number | null
+    readonly pops: readonly HealthPop[]
+    readonly count: number
+}
+
+const FILL_SHAPE = "-80,0 6,0 -3,42 -80,42"
+
 export default function HealthBar({
     hp,
     maxHp,
 }: HealthBarProps) {
+    const [tracker, setTracker] = useState<HealthTracker>({
+        hp,
+        pops: [],
+        count: 0,
+    })
+
+    if (tracker.hp !== hp) {
+        const delta = tracker.hp !== null && hp !== null ? hp - tracker.hp : 0
+        setTracker({
+            hp,
+            pops: delta === 0
+                ? tracker.pops
+                : [...tracker.pops, { id: tracker.count, delta }],
+            count: tracker.count + 1,
+        })
+    }
+
+    function removePop(id: number) {
+        setTracker((current) => ({
+            ...current,
+            pops: current.pops.filter((pop) => pop.id !== id),
+        }))
+    }
+
     const currentHp = hp ?? 0
     const maximumHp = maxHp ?? 0
 
@@ -23,55 +62,70 @@ export default function HealthBar({
                 Math.min(100, (currentHp / maximumHp) * 100)
             )
             : 0
-    const fillBoundary = 7.64 + (percentage/100 * 24.72)
+    const fillBoundary = 7.64 + (percentage / 100 * 24.72)
+    const fillStyle = { transform: `translateX(${fillBoundary}px)` }
 
     return (
         <div
             className="health-bar player-health-bar"
             aria-label={`Health: ${Math.round(percentage)}%`}
         >
-            <svg
-                className="health-heart"
-                viewBox="0 0 42 42"
-                role="img"
-            >
-                <defs>
-                    <clipPath id="health-heart-clip">
-                        <path d={INNER_HEART} />
-                    </clipPath>
-                </defs>
+            <div className="health-bar-clip">
+                <svg
+                    className="health-heart"
+                    viewBox="0 0 42 42"
+                    role="img"
+                >
+                    <defs>
+                        <clipPath id="health-heart-clip">
+                            <path d={INNER_HEART} />
+                        </clipPath>
+                    </defs>
 
-                {/* Red exterior — ALWAYS visible */}
-                <path
-                    d={OUTER_HEART}
-                    className="health-heart-red"
-                />
+                    {/* Red exterior - ALWAYS visible */}
+                    <path
+                        d={OUTER_HEART}
+                        className="health-heart-red"
+                    />
 
-                {/* Black interior — ALWAYS visible */}
-                <path
-                    d={INNER_HEART}
-                    className="health-heart-black"
-                />
+                    {/* Black interior - ALWAYS visible */}
+                    <path
+                        d={INNER_HEART}
+                        className="health-heart-black"
+                    />
 
-                {/* Green HP — clipped inside the black heart */}
-                <polygon
-    className="health-heart-green"
-    points={`
-        0,0
-        ${fillBoundary + 6},0
-        ${fillBoundary - 3},42
-        0,42
-        0,0
-    `}
-    clipPath="url(#health-heart-clip)"
-/>
+                    {/* Fills are clipped inside the black heart; the group keeps the clip fixed while the shapes slide */}
+                    <g clipPath="url(#health-heart-clip)">
+                        <polygon
+                            className="health-heart-trail"
+                            points={FILL_SHAPE}
+                            style={fillStyle}
+                        />
+                        <polygon
+                            className="health-heart-green"
+                            points={FILL_SHAPE}
+                            style={fillStyle}
+                        />
+                    </g>
 
-                {/* Black border stays on top of green */}
-                <path
-                    d={INNER_HEART}
-                    className="health-heart-outline"
-                />
-            </svg>
+                    {/* Black border stays on top of the fills */}
+                    <path
+                        d={INNER_HEART}
+                        className="health-heart-outline"
+                    />
+                </svg>
+            </div>
+
+            {tracker.pops.map((pop) => (
+                <span
+                    key={pop.id}
+                    className={pop.delta < 0 ? "health-pop health-pop-damage" : "health-pop health-pop-heal"}
+                    aria-hidden="true"
+                    onAnimationEnd={() => removePop(pop.id)}
+                >
+                    {pop.delta > 0 ? `+${pop.delta}` : pop.delta}
+                </span>
+            ))}
         </div>
     )
 }
