@@ -971,20 +971,23 @@ button:hover {
 }
 
 .player-health-bar {
-  width: 70px;
-  height: 55px;
+  width: 76px;
+  height: 40px;
+  overflow: hidden;
   justify-self: center;
 }
 
 .player-health-spacer {
-  width: 70px;
-  height: 55px;
+  width: 76px;
+  height: 40px;
   justify-self: center;
 }
 
 .health-heart {
-  width: 60px;
-  height: 55px;
+  width: 65px;
+  height: 60px;
+  display: block;
+  margin-top: -5px;
   overflow: visible;
 }
 
@@ -1106,34 +1109,11 @@ button:hover {
 }
 
 .damage-dialog {
-  width: min(100%, 360px);
+  width: min(100%, 380px);
   padding: 18px;
   border: 1px solid #555;
   background: #171717;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
-}
-
-.damage-dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.damage-dialog-header h2 {
-  min-width: 0;
-  margin: 0;
-  font-size: 1rem;
-  overflow-wrap: anywhere;
-}
-
-.damage-dialog-header button {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  flex: 0 0 auto;
-  font-size: 18px;
 }
 
 .damage-dialog form {
@@ -1150,6 +1130,7 @@ button:hover {
 
 .damage-dialog-field > input,
 .damage-type-control {
+  box-sizing: border-box;
   width: 100%;
   min-height: 40px;
   border: 1px solid #444;
@@ -1168,26 +1149,68 @@ button:hover {
   padding: 4px 8px;
 }
 
-.damage-type-control img,
-.damage-type-empty-icon {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+.damage-dialog-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.damage-dialog-amount {
+  flex: 0 0 84px;
+}
+
+.damage-dialog-type {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.damage-type-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 34px);
+  gap: 4px;
+}
+
+.damage-type-none {
+  color: #999;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.damage-type-option {
+  width: 34px;
+  height: 34px;
+  padding: 3px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #101010;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+.damage-type-option:hover {
+  opacity: 0.9;
+}
+
+.damage-type-option.selected {
+  opacity: 1;
+  border-color: #eee;
+  background: #262626;
+  transform: scale(1.1);
+}
+
+.damage-type-option img,
+.damage-type-option svg {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
-.damage-type-empty-icon {
-  display: grid;
-  place-items: center;
-  color: #999;
-}
-
-.damage-type-heal-icon {
-  display: grid;
-  place-items: center;
-  color: #0fe794;
-  font-size: 1.5rem;
-  font-weight: 700;
+.damage-type-option svg {
+  fill: #0fe794;
 }
 
 .damage-type-control select {

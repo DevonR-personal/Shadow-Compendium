@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { AFFINITY_LABELS, AFFINITY_ORDER } from "../constants/affinities"
-import type { AffinityElement, Combatant } from "../types"
+import type { Combatant } from "../types"
 import type { DamageType } from "../utils/damageResolution"
 
 type DamageDialogProps = {
@@ -32,65 +32,82 @@ export default function DamageDialog({
         onConfirm(Number(amount), damageType, sourceId)
     }
 
-    const iconSrc = damageType && damageType !== "heal"
-        ? `/icons/Icon_${damageType.charAt(0).toUpperCase()}${damageType.slice(1)}.png`
-        : null
-
     return (
         <div className="damage-dialog-backdrop">
             <dialog
                 className="damage-dialog"
                 open
-                aria-labelledby="damage-dialog-title"
+                aria-label={`Damage ${combatant.display_name}`}
             >
-                <header className="damage-dialog-header">
-                    <h2 id="damage-dialog-title">Damage {combatant.display_name}</h2>
-                    <button type="button" onClick={onCancel} aria-label="Close damage dialog">×</button>
-                </header>
                 <form onSubmit={submit}>
-                    <label className="damage-dialog-field">
-                        <span>Amount</span>
-                        <input
-                            autoFocus
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={amount}
-                            onChange={(event) => {
-                                if (/^\d*$/.test(event.target.value)) {
-                                    setAmount(event.target.value)
-                                }
-                            }}
-                            aria-label="Damage amount"
-                        />
-                    </label>
-                    <label className="damage-dialog-field">
-                        <span>Damage type</span>
-                        <span className="damage-type-control">
-                            {iconSrc
-                                ? <img src={iconSrc} alt="" />
-                                : <span className={damageType === "heal" ? "damage-type-heal-icon" : "damage-type-empty-icon"}>
-                                    {damageType === "heal" ? "+" : "—"}
-                                </span>}
-                            <select
-                                value={damageType ?? ""}
-                                onChange={(event) => setDamageType(
-                                    event.target.value === ""
-                                        ? null
-                                        : event.target.value === "heal"
-                                            ? "heal"
-                                            : event.target.value as AffinityElement,
-                                )}
-                                aria-label="Damage type"
+                    <div className="damage-dialog-row">
+                        <label className="damage-dialog-field damage-dialog-amount">
+                            <span>Amount</span>
+                            <input
+                                autoFocus
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={amount}
+                                onChange={(event) => {
+                                    if (/^\d*$/.test(event.target.value)) {
+                                        setAmount(event.target.value)
+                                    }
+                                }}
+                                aria-label="Damage amount"
+                            />
+                        </label>
+                        <div className="damage-dialog-field damage-dialog-type">
+                            <span id="damage-type-label">Damage type</span>
+                            <div
+                                className="damage-type-picker"
+                                role="radiogroup"
+                                aria-labelledby="damage-type-label"
                             >
-                                <option value="">No element</option>
-                                <option value="heal">Heal</option>
                                 {AFFINITY_ORDER.map((entry) => (
-                                    <option key={entry} value={entry}>{AFFINITY_LABELS[entry]}</option>
+                                    <button
+                                        key={entry}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={damageType === entry}
+                                        aria-label={AFFINITY_LABELS[entry]}
+                                        title={AFFINITY_LABELS[entry]}
+                                        className={damageType === entry ? "damage-type-option selected" : "damage-type-option"}
+                                        onClick={() => setDamageType(damageType === entry ? null : entry)}
+                                    >
+                                        <img
+                                            src={`/icons/Icon_${entry.charAt(0).toUpperCase()}${entry.slice(1)}.png`}
+                                            alt=""
+                                        />
+                                    </button>
                                 ))}
-                            </select>
-                        </span>
-                    </label>
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={damageType === "heal"}
+                                    aria-label="Heal"
+                                    title="Heal"
+                                    className={damageType === "heal" ? "damage-type-option selected" : "damage-type-option"}
+                                    onClick={() => setDamageType(damageType === "heal" ? null : "heal")}
+                                >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z" />
+                                    </svg>
+                                </button>
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={damageType === null}
+                                    aria-label="No element"
+                                    title="No element"
+                                    className={damageType === null ? "damage-type-option selected" : "damage-type-option"}
+                                    onClick={() => setDamageType(null)}
+                                >
+                                    <span className="damage-type-none">-</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <label className="damage-dialog-field">
                         <span>Dealt by</span>
                         <span className="damage-type-control">
