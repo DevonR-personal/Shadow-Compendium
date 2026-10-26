@@ -8,15 +8,24 @@ import {
     updateCombatantDowned,
     updateCombatantCondition
 } from "../services/combatants"
-import type { Combatant, Shadow } from "../types"
+import type { AffinityElement, Combatant, Shadow } from "../types"
 import { supabase } from "../supabase"
-import { AFFINITY_ORDER } from "../constants/affinities"
+import { AFFINITY_LABELS, AFFINITY_ORDER } from "../constants/affinities"
 import { getConditions } from "../services/conditions"
 import CombatLootBar from "../components/CombatLootBar"
 import CombatantRow from "../components/CombatantRow"
 import PlayerQuickReference from "../components/PlayerQuickReference"
 import WeaknessCutin from "../components/WeaknessCutin"
+import DamageDialog from "../components/DamageDialog"
 import type { TurnHighlights } from "../utils/turnHighlights"
+import { updateAffinityDiscovery } from "../services/affinities"
+import { getAffinity } from "../utils/affinities"
+import { formatDamageLog } from "../utils/combatLog"
+import {
+    applyDamageOutcomeToHitPoints,
+    resolveDamage,
+    type DamageType,
+} from "../utils/damageResolution"
 import {
     applyModifierDelta,
     type ModifierKey,
@@ -27,6 +36,8 @@ type EncounterPageProps = Readonly<{
     playerView: boolean
     onRefreshShadows: () => Promise<void>
     onSelectShadow: (shadow: Shadow, combatant?: Combatant) => void
+    onSyncSelectedShadow?: (shadow: Shadow, combatant: Combatant) => void
+    onDamageLogged?: (text: string) => void
     lootYen: number
     lootItems: string[]
     onCombatLootChange: (loot: {
@@ -41,6 +52,8 @@ export default function EncounterPage({
     playerView,
     onRefreshShadows,
     onSelectShadow,
+    onSyncSelectedShadow,
+    onDamageLogged,
     lootYen,
     lootItems,
     onCombatLootChange,
@@ -53,9 +66,14 @@ export default function EncounterPage({
     const [cutinPlayToken, setCutinPlayToken] = useState(0)
     const [cutinPlaying, setCutinPlaying] = useState(false)
     const [cutinCharacter, setCutinCharacter] = useState<"Wiz" | "Nik">("Wiz")
+    const [damageTarget, setDamageTarget] = useState<Combatant | null>(null)
+    const [combatNotice, setCombatNotice] = useState<{ id: string; message: string } | null>(null)
     const cutinChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
     const cutinBroadcastRef = useRef<BroadcastChannel | null>(null)
     const lastCutinEventRef = useRef<string | null>(null)
+    const noticeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+    const noticeBroadcastRef = useRef<BroadcastChannel | null>(null)
+    const seenNoticeIdsRef = useRef(new Set<string>())
     const finishCutin = useCallback(() => {
         setCutinPlaying(false)
     }, [])
@@ -65,6 +83,11 @@ export default function EncounterPage({
         setCutinCharacter(character)
         setCutinPlayToken((token) => token + 1)
         setCutinPlaying(true)
+    }, [])
+    const receiveCombatNotice = useCallback((id: string, message: string) => {
+        if (seenNoticeIdsRef.current.has(id)) return
+        seenNoticeIdsRef.current.add(id)
+        setCombatNotice({ id, message })
     }, [])
     const [conditions, setConditions] = useState<
         Awaited<ReturnType<typeof getConditions>>["data"]
@@ -181,9 +204,9 @@ export default function EncounterPage({
         }, 2000)
 
         return () => {
-            supabase.removeChannel(combatantsChannel)
-            supabase.removeChannel(affinitiesChannel)
-            supabase.removeChannel(combatStateChannel)
+            void supabase.removeChannel(combatantsChannel)
+            void supabase.removeChannel(affinitiesChannel)
+            void supabase.removeChannel(combatStateChannel)
             window.clearInterval(lootRefreshInterval)
         }
     }, [onCombatLootChange, onRefreshShadows])
@@ -214,9 +237,43 @@ export default function EncounterPage({
             cutinChannelRef.current = null
             cutinBroadcastRef.current = null
             localBroadcast.close()
-            supabase.removeChannel(cutinChannel)
+            void supabase.removeChannel(cutinChannel)
         }
     }, [playCutinEvent])
+
+    useEffect(() => {
+        const localNoticeBroadcast = new BroadcastChannel("shadow-tracker-combat-notices")
+        localNoticeBroadcast.onmessage = (
+            event: MessageEvent<{ id?: string; message?: string }>
+        ) => {
+            if (event.data.id && event.data.message) {
+                receiveCombatNotice(event.data.id, event.data.message)
+            }
+        }
+        noticeBroadcastRef.current = localNoticeBroadcast
+
+        const noticeChannel = supabase
+            .channel("encounter-combat-notices", {
+                config: { broadcast: { self: false } },
+            })
+            .on("broadcast", { event: "reflect" }, (event) => {
+                const id = event.payload?.id
+                const message = event.payload?.message
+                if (typeof id === "string" && typeof message === "string") {
+                    receiveCombatNotice(id, message)
+                }
+            })
+            .subscribe()
+
+        noticeChannelRef.current = noticeChannel
+
+        return () => {
+            noticeBroadcastRef.current = null
+            noticeChannelRef.current = null
+            localNoticeBroadcast.close()
+            void supabase.removeChannel(noticeChannel)
+        }
+    }, [receiveCombatNotice])
 
     useEffect(() => {
         const currentCombatant =
@@ -237,9 +294,9 @@ export default function EncounterPage({
         )
 
         if (shadow) {
-            onSelectShadow?.(shadow, currentCombatant)
+            onSyncSelectedShadow?.(shadow, currentCombatant)
         }
-    }, [combatants, shadows, onSelectShadow])
+    }, [combatants, shadows, onSyncSelectedShadow])
 
     async function handleRemoveCombatant(
         id: number
@@ -264,69 +321,83 @@ export default function EncounterPage({
         )
     }
 
-    async function handleDamage(
-        combatant: Combatant
+    function handleDamage(combatant: Combatant) {
+        setDamageTarget(combatant)
+    }
+
+    async function handleDamageConfirm(
+        enteredAmount: number,
+        damageType: DamageType,
+        sourceId: number | null,
     ) {
-        const amount = window.prompt(
-            `Damage ${combatant.display_name} for how much?`
+        if (!damageTarget) return
+        const target = damageTarget
+        const shadow = getTargetShadow(target, shadowMap)
+        const element = damageType && damageType !== "heal" ? damageType : null
+        const affinity = getTargetAffinity(shadow, element)
+        const outcome = resolveDamage(
+            enteredAmount,
+            damageType,
+            affinity?.value ?? null,
+            shadow?.armor ?? 0,
         )
+        const maximumHp = Math.max(0, target.max_hp ?? target.hp ?? 0)
+        const currentHp = Math.max(0, Math.min(maximumHp, target.hp ?? 0))
+        const nextHp = applyDamageOutcomeToHitPoints(currentHp, maximumHp, outcome)
 
-        if (!amount) {
-            return
+        if (nextHp !== currentHp) {
+            const error = await updateCombatant(target.id, { hp: nextHp })
+            if (error) {
+                setError(error.message)
+                return
+            }
         }
 
-        const damage = Number(amount)
-
-        if (!Number.isFinite(damage) || damage === 0) {
-            return
+        const revealsHiddenAffinity = Boolean(enteredAmount > 0 && shadow && affinity && !affinity.discovered)
+        if (revealsHiddenAffinity && affinity) {
+            const revealError = await updateAffinityDiscovery(affinity.id, true)
+            if (revealError) {
+                setError(revealError.message)
+                return
+            }
+            void onRefreshShadows()
         }
 
-        const isHealing = damage < 0
-        const magnitude = Math.abs(damage)
+        const sourceCombatant = combatants.find((combatant) => combatant.id === sourceId)
+        onDamageLogged?.(formatDamageLog({
+            source: sourceCombatant?.display_name ?? null,
+            target: target.display_name,
+            outcome,
+            damageType,
+            affinity: affinity?.value ?? null,
+        }))
 
-        const shadow =
-            combatant.combatant_type === "shadow" &&
-                combatant.shadow_id !== null
-                ? shadowMap.get(combatant.shadow_id)
-                : undefined
-
-        const armor =
-            shadow?.armor ?? 0
-
-        const actualDamage =
-            combatant.combatant_type === "shadow" && !isHealing
-                ? Math.max(1, magnitude - armor)
-                : magnitude
-
-        const currentHP =
-            combatant.hp ?? 0
-
-        const nextHP = isHealing
-            ? Math.min(
-                combatant.max_hp ?? currentHP,
-                Math.max(
-                    0,
-                    currentHP + actualDamage
-                )
+        if (outcome.kind === "reflect" && element) {
+            broadcastReflectNotice(
+                `${outcome.amount} ${AFFINITY_LABELS[element]} damage was reflected!`,
             )
-            : Math.min(
-                combatant.max_hp ?? currentHP,
-                Math.max(
-                    0,
-                    currentHP - actualDamage
-                )
-            )
-
-        const error =
-            await updateCombatant(
-                combatant.id,
-                { hp: nextHP }
-            )
-
-        if (error) {
-            console.error(error)
-            setError(error.message)
         }
+
+        if (
+            revealsHiddenAffinity && affinity?.value === "weak" &&
+            outcome.kind === "damage" && outcome.amount > 0 &&
+            sourceCombatant?.combatant_type === "player"
+        ) {
+            triggerWeaknessCutin(getCutinCharacter(sourceCombatant))
+        }
+
+        setDamageTarget(null)
+    }
+
+    function broadcastReflectNotice(message: string) {
+        const id = window.crypto.randomUUID()
+        receiveCombatNotice(id, message)
+        noticeBroadcastRef.current?.postMessage({ id, message })
+        void noticeChannelRef.current?.send({
+            type: "broadcast",
+            event: "reflect",
+            payload: { id, message },
+        })
     }
 
     async function handleToggleDowned(
@@ -470,11 +541,36 @@ export default function EncounterPage({
                     onFinish={finishCutin}
                 />
             )}
+            {!playerView && damageTarget && (
+                <DamageDialog
+                    key={damageTarget.id}
+                    combatant={damageTarget}
+                    sources={combatants}
+                    defaultSourceId={combatants.find((combatant) => combatant.is_current_turn)?.id ?? null}
+                    onCancel={() => setDamageTarget(null)}
+                    onConfirm={(amount, element, sourceId) => void handleDamageConfirm(amount, element, sourceId)}
+                />
+            )}
             {playerView && <PlayerQuickReference />}
             <CombatLootBar
                 yen={lootYen}
                 items={lootItems}
+                notice={combatNotice}
             />
         </main>
     )
+}
+
+function getTargetShadow(target: Combatant, shadowMap: Map<number, Shadow>) {
+    return target.combatant_type === "shadow" && target.shadow_id !== null
+        ? shadowMap.get(target.shadow_id)
+        : undefined
+}
+
+function getTargetAffinity(shadow: Shadow | undefined, element: AffinityElement | null) {
+    return shadow && element ? getAffinity(shadow.shadow_affinities, element) : undefined
+}
+
+function getCutinCharacter(combatant: Combatant): "Wiz" | "Nik" {
+    return combatant.display_name.toLowerCase().includes("nikolas") ? "Nik" : "Wiz"
 }

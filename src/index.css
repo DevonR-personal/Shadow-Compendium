@@ -80,6 +80,8 @@ button:hover {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 .player-turn-number {
@@ -312,31 +314,9 @@ button:hover {
 
 .gm-layout {
   display: grid;
-  grid-template-columns: 219px 24px minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   height: 100vh;
   min-width: 0;
-}
-
-.gm-layout.library-collapsed {
-  grid-template-columns: 24px minmax(0, 1fr) 340px;
-}
-
-.library-collapse-toggle {
-  z-index: 2;
-  width: 24px;
-  height: 100vh;
-  padding: 0;
-  border: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 0;
-  background: #151515;
-  color: #aaa;
-  font-size: 20px;
-}
-
-.library-collapse-toggle:hover {
-  background: #222;
-  color: #fff;
 }
 
 .gm-combat-panel,
@@ -346,18 +326,120 @@ button:hover {
   overflow: hidden;
 }
 
-.gm-library-panel,
 .gm-combat-panel {
+  display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-.gm-library-panel {
+.gm-combat-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.gm-combat-body > .app {
+  min-height: 0;
+}
+
+.gm-side-panel {
   display: flex;
-  width: 219px;
-  max-width: 100%;
-  min-width: 0;
   flex-direction: column;
-  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  height: 100vh;
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.gm-side-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.gm-side-content.details {
+  padding: 16px 8px;
+}
+
+.gm-side-content.details > .shadow-details-panel:not(.empty) {
+  height: auto;
+  overflow: visible;
+}
+
+.combat-log {
+  position: relative;
+  flex: 0 0 auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  background: #121212;
+}
+
+.combat-log-resize {
+  position: absolute;
+  top: -4px;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.combat-log-resize:hover,
+.combat-log-resize:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.combat-log-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.combat-log-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.combat-log-list {
+  margin: 0;
+  padding: 2px 12px 8px;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 0.78rem;
+}
+
+.combat-log-entry {
+  padding: 2px 0;
+  color: #ddd;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.combat-log-entry:not(:first-child) {
+  opacity: 0.7;
+}
+
+.combat-log-entry.loot {
+  color: #f0c674;
+}
+
+.combat-log-empty {
+  color: #777;
 }
 
 .shadow-library {
@@ -368,13 +450,6 @@ button:hover {
 .shadow-list-scroll {
   flex: 1;
   overflow-y: auto;
-}
-
-.library-content {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  min-height: 0;
 }
 
 .player-quick-reference {
@@ -1020,8 +1095,130 @@ button:hover {
   min-width: 300px;
 }
 
+.damage-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.damage-dialog {
+  width: min(100%, 360px);
+  padding: 18px;
+  border: 1px solid #555;
+  background: #171717;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+}
+
+.damage-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.damage-dialog-header h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.damage-dialog-header button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  flex: 0 0 auto;
+  font-size: 18px;
+}
+
+.damage-dialog form {
+  display: grid;
+  gap: 14px;
+}
+
+.damage-dialog-field {
+  display: grid;
+  gap: 5px;
+  color: #bbb;
+  font-size: 0.78rem;
+}
+
+.damage-dialog-field > input,
+.damage-type-control {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #444;
+  background: #101010;
+  color: #eee;
+}
+
+.damage-dialog-field > input {
+  padding: 8px 10px;
+}
+
+.damage-type-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+}
+
+.damage-type-control img,
+.damage-type-empty-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  object-fit: contain;
+}
+
+.damage-type-empty-icon {
+  display: grid;
+  place-items: center;
+  color: #999;
+}
+
+.damage-type-heal-icon {
+  display: grid;
+  place-items: center;
+  color: #0fe794;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.damage-type-control select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #eee;
+}
+
+.damage-type-control option {
+  background: #171717;
+  color: #eee;
+}
+
+.damage-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.damage-dialog-actions button {
+  min-width: 84px;
+  padding: 7px 10px;
+}
+
 .current-turn {
-  background: rgba(255, 215, 0, 0.12);
+  background: rgba(255, 72, 72, 0.1);
+  box-shadow: inset 0 0 16px rgba(255, 72, 72, 0.12);
 }
 
 .turn-highlight {
@@ -1463,7 +1660,7 @@ button:hover {
 
 .library-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
 
   min-height: 42px;
   margin-bottom: 0;
@@ -1537,26 +1734,11 @@ button:hover {
 }
 
 .turn-number {
-  position: fixed;
-  top: 4px;
-  right: 4px;
-  z-index: 10;
-  padding: 4px;
-  background: #000;
+  margin-left: auto;
   color: #f0c674;
   font-size: 0.85rem;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.gm-details-panel {
-  height: 100vh;
-  min-height: 0;
-  overflow-y: auto;
-
-  padding: 16px 8px;
-
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .shadow-details-panel {
@@ -1650,6 +1832,12 @@ button:hover {
 .combat-loot-bar strong {
   color: #f0c674;
   white-space: nowrap;
+}
+
+.combat-loot-bar .combat-loot-notice {
+  flex-basis: 100%;
+  color: #f2f2f2;
+  white-space: normal;
 }
 
 .combat-loot-bar span {

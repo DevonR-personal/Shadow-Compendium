@@ -298,6 +298,7 @@ export function useCombatController({
         })
         setCombatActive(false)
         setShowInitiativeWindow(false)
+        return loot
     }
 
     async function togglePlayerInitiative(player: Player) {
