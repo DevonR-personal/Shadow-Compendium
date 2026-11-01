@@ -303,6 +303,9 @@ export default function CombatantRow({
                         : "gm-combatant-row",
                     combatant.is_current_turn ? "current-turn" : "",
                     highlighted ? "turn-highlight" : "",
+                    playerView && combatant.combatant_type === "shadow" && combatant.hp !== null && combatant.hp <= 0
+                        ? "combatant-defeated"
+                        : "",
                     stripeIndex % 2 === 0 ? "combatant-row-even" : "combatant-row-odd",
                 ].join(" ")}
                 key={combatant.id}

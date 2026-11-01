@@ -116,6 +116,10 @@ export default function HealthBar({
                 </svg>
             </div>
 
+            {hp !== null && hp <= 0 && (
+                <span className="health-defeated-x" aria-hidden="true">X</span>
+            )}
+
             {tracker.pops.map((pop) => (
                 <span
                     key={pop.id}

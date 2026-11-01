@@ -1015,6 +1015,54 @@ button:hover {
   transition: transform 0.5s ease-in 0.45s;
 }
 
+.combatant-defeated > :not(.player-health-bar) {
+  opacity: 0.4;
+}
+
+.combatant-defeated .affinity-cell::before {
+  opacity: 0.28;
+}
+
+.combatant-defeated .affinity-cell {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.combatant-defeated .health-bar-clip {
+  opacity: 0.45;
+}
+
+.health-defeated-x {
+  position: absolute;
+  top: -4px;
+  left: -3px;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  pointer-events: none;
+  font-family: "Permanent Marker", cursive;
+  font-size: 46px;
+  line-height: 1;
+  color: #dd0001;
+  -webkit-text-stroke: 2px #000;
+  paint-order: stroke fill;
+  text-shadow: 0 0 8px rgba(221, 0, 1, 0.7);
+  animation: health-x-in 0.3s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes health-x-in {
+  from {
+    opacity: 0;
+    transform: scale(2.2) rotate(-15deg) skewX(-14deg);
+  }
+  to {
+    opacity: 1;
+    transform: skewX(-14deg);
+  }
+}
+
 .health-pop {
   position: absolute;
   top: 6px;
