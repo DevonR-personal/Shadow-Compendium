@@ -84,6 +84,7 @@ export type Player = {
   id: number
   name: string
   in_initiative: boolean
+  is_player: boolean
   weapon1_id: number | null
   weapon2_id: number | null
 }

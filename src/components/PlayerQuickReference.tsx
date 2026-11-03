@@ -220,7 +220,7 @@ export default function PlayerQuickReference({
                 return
             }
 
-            const activePlayers = result.data.filter((player) => player.in_initiative)
+            const activePlayers = result.data.filter((player) => player.in_initiative && player.is_player)
             setPlayers(activePlayers)
             setSelectedPlayerId((current) =>
                 current !== "" && activePlayers.some((player) => player.id === current)

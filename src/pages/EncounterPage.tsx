@@ -555,8 +555,8 @@ export default function EncounterPage({
                 <DamageDialog
                     key={damageTarget.id}
                     combatant={damageTarget}
-                    sources={combatants}
-                    defaultSourceId={combatants.find((combatant) => combatant.is_current_turn)?.id ?? null}
+                    sources={combatants.filter((combatant) => combatant.combatant_type === "player")}
+                    defaultSourceId={combatants.find((combatant) => combatant.is_current_turn && combatant.combatant_type === "player")?.id ?? null}
                     onCancel={() => setDamageTarget(null)}
                     onConfirm={(amount, element, sourceId) => void handleDamageConfirm(amount, element, sourceId)}
                 />
