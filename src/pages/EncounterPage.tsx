@@ -30,6 +30,11 @@ import {
     applyModifierDelta,
     type ModifierKey,
 } from "../utils/modifiers"
+import {
+    getWeaknessCutinCharacter,
+    isWeaknessCutinCharacter,
+    type WeaknessCutinCharacter,
+} from "../utils/weaknessCutin"
 
 type EncounterPageProps = Readonly<{
     shadows: Shadow[]
@@ -65,7 +70,7 @@ export default function EncounterPage({
     const [turnNumber, setTurnNumber] = useState(0)
     const [cutinPlayToken, setCutinPlayToken] = useState(0)
     const [cutinPlaying, setCutinPlaying] = useState(false)
-    const [cutinCharacter, setCutinCharacter] = useState<"Wiz" | "Nik">("Wiz")
+    const [cutinCharacter, setCutinCharacter] = useState<WeaknessCutinCharacter>("Wiz")
     const [damageTarget, setDamageTarget] = useState<Combatant | null>(null)
     const [combatNotice, setCombatNotice] = useState<{ id: string; message: string } | null>(null)
     const cutinChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -77,7 +82,7 @@ export default function EncounterPage({
     const finishCutin = useCallback(() => {
         setCutinPlaying(false)
     }, [])
-    const playCutinEvent = useCallback((eventId: string, character: "Wiz" | "Nik") => {
+    const playCutinEvent = useCallback((eventId: string, character: WeaknessCutinCharacter) => {
         if (lastCutinEventRef.current === eventId) return
         lastCutinEventRef.current = eventId
         setCutinCharacter(character)
@@ -213,9 +218,12 @@ export default function EncounterPage({
 
     useEffect(() => {
         const localBroadcast = new BroadcastChannel("shadow-tracker-weakness-cutin")
-        localBroadcast.onmessage = (event: MessageEvent<{ eventId?: string; character?: "Wiz" | "Nik" }>) => {
+        localBroadcast.onmessage = (event: MessageEvent<{ eventId?: string; character?: WeaknessCutinCharacter }>) => {
             if (event.data.eventId) {
-                playCutinEvent(event.data.eventId, event.data.character ?? "Wiz")
+                const character = isWeaknessCutinCharacter(event.data.character)
+                    ? event.data.character
+                    : "Wiz"
+                playCutinEvent(event.data.eventId, character)
             }
         }
         cutinBroadcastRef.current = localBroadcast
@@ -226,7 +234,9 @@ export default function EncounterPage({
             })
             .on("broadcast", { event: "play" }, (message) => {
                 const eventId = message.payload?.eventId
-                const character = message.payload?.character === "Nik" ? "Nik" : "Wiz"
+                const character = isWeaknessCutinCharacter(message.payload?.character)
+                    ? message.payload.character
+                    : "Wiz"
                 if (typeof eventId === "string") playCutinEvent(eventId, character)
             })
             .subscribe()
@@ -459,7 +469,7 @@ export default function EncounterPage({
         }
     }
 
-    function triggerWeaknessCutin(character: "Wiz" | "Nik") {
+    function triggerWeaknessCutin(character: WeaknessCutinCharacter) {
         const eventId = window.crypto.randomUUID()
         playCutinEvent(eventId, character)
         cutinBroadcastRef.current?.postMessage({ eventId, character })
@@ -571,6 +581,6 @@ function getTargetAffinity(shadow: Shadow | undefined, element: AffinityElement 
     return shadow && element ? getAffinity(shadow.shadow_affinities, element) : undefined
 }
 
-function getCutinCharacter(combatant: Combatant): "Wiz" | "Nik" {
-    return combatant.display_name.toLowerCase().includes("nikolas") ? "Nik" : "Wiz"
+function getCutinCharacter(combatant: Combatant): WeaknessCutinCharacter {
+    return getWeaknessCutinCharacter(combatant.display_name)
 }

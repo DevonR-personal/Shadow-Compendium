@@ -3,6 +3,10 @@ import type { getConditions } from "../services/conditions"
 import {
     type ModifierKey,
 } from "../utils/modifiers"
+import {
+    getWeaknessCutinCharacter,
+    type WeaknessCutinCharacter,
+} from "../utils/weaknessCutin"
 import AffinityGrid from "./AffinityGrid"
 import HealthBar from "./HealthBar"
 
@@ -23,7 +27,7 @@ type CombatantRowProps = {
         key: ModifierKey,
         value: number
     ) => void
-    readonly onTriggerCutin: (character: "Wiz" | "Nik") => void
+    readonly onTriggerCutin: (character: WeaknessCutinCharacter) => void
     readonly onRemove: (id: number) => void
     readonly highlighted: boolean
     readonly stripeIndex: number
@@ -293,6 +297,8 @@ export default function CombatantRow({
     highlighted,
     stripeIndex,
 }: CombatantRowProps) {
+    const cutinCharacter = getWeaknessCutinCharacter(combatant.display_name)
+
     return (
         <>
             <div
@@ -370,13 +376,9 @@ export default function CombatantRow({
                     <button
                         className="cutin-trigger"
                         type="button"
-                        onClick={() => onTriggerCutin(
-                            combatant.display_name.toLowerCase().includes("nikolas")
-                                ? "Nik"
-                                : "Wiz"
-                        )}
-                        aria-label={`Play ${combatant.display_name.toLowerCase().includes("nikolas") ? "Nik" : "Wiz"} weakness cut-in for ${combatant.display_name}`}
-                        title={`Play ${combatant.display_name.toLowerCase().includes("nikolas") ? "Nik" : "Wiz"} weakness cut-in`}
+                        onClick={() => onTriggerCutin(cutinCharacter)}
+                        aria-label={`Play ${cutinCharacter} weakness cut-in for ${combatant.display_name}`}
+                        title={`Play ${cutinCharacter} weakness cut-in`}
                     >
                         ✦
                     </button>

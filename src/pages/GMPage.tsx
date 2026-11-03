@@ -54,8 +54,13 @@ export default function GMPage({
     onRefreshShadows,
 }: Readonly<GMPageProps>) {
     const [sideTab, setSideTab] = useState<SidePanelTab>("details")
-    const [selectedShadow, setSelectedShadow] =
+    const [selectedShadowSnapshot, setSelectedShadow] =
         useState<Shadow | null>(null)
+    // Prefer the latest refreshed copy so affinity reveals made elsewhere show up here.
+    const selectedShadow = selectedShadowSnapshot
+        ? shadows.find((shadow) => shadow.id === selectedShadowSnapshot.id) ??
+            selectedShadowSnapshot
+        : null
     const [selectedCombatant, setSelectedCombatant] =
         useState<Combatant | null>(null)
     const [selectedPlayer, setSelectedPlayer] =
