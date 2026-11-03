@@ -179,6 +179,22 @@ button:hover {
   line-height: 1;
 }
 
+.shadow-name-button {
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: inherit;
+  width: 100%;
+  min-height: 38px;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shadow-name-button:hover {
+  text-decoration: underline;
+}
+
 .affinity-list {
   max-width: 700px;
   border: 1px solid #333;
@@ -222,6 +238,107 @@ button:hover {
 
 .affinity-drain {
   color: #67d3a0;
+}
+
+.affinity-cell {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  overflow: hidden;
+  text-shadow:
+    3px 3px 5px #000,
+    -3px -3px 5px #000,
+    3px -3px 5px #000,
+    -3px 3px 5px #000,
+    0 0 10px #000;
+  appearance: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.affinity-cell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 80%;
+  opacity: .7;
+  pointer-events: none;
+}
+
+.player-combatant-row .affinity-cell {
+  width: 44px;
+  margin-right: -4px;
+}
+
+.player-combatant-row .affinity-cell::before {
+  inset: 2px 0;
+  background-size: 100% 100%;
+  mix-blend-mode: lighten;
+}
+
+.affinity-cell:hover {
+  background: transparent;
+  filter: none;
+}
+
+.affinity-cell.gm-clickable {
+  cursor: pointer;
+}
+
+.affinity-cell.gm-clickable:hover {
+  filter: brightness(1.25);
+}
+
+.fire::before {
+  background-image: url("/skills/SkillFire.png");
+}
+
+.ice::before {
+  background-image: url("/skills/SkillIce.png");
+}
+
+.wind::before {
+  background-image: url("/skills/SkillWind.png");
+}
+
+.electric::before {
+  background-image: url("/skills/SkillElectric.png");
+}
+
+.psychic::before {
+  background-image: url("/skills/SkillPsychic.png");
+}
+
+.nuclear::before {
+  background-image: url("/skills/SkillNuclear.png");
+}
+
+.bless::before {
+  background-image: url("/skills/SkillBless.png");
+}
+
+.curse::before {
+  background-image: url("/skills/SkillCurse.png");
+}
+
+.melee::before {
+  background-image: url("/skills/SkillMelee.png");
+}
+
+.ranged::before {
+  background-image: url("/skills/SkillRanged.png");
 }
 
 .error {
@@ -368,6 +485,48 @@ button:hover {
   overflow: visible;
 }
 
+.gm-combat-controls {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+  gap: 24px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.gm-combat-controls button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 8px 4px;
+  margin: 0;
+  border-radius: 0;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease;
+}
+
+.gm-combat-controls button:hover {
+  opacity: 1;
+}
+
+.gm-combat-controls button:active {
+  opacity: 0.75;
+}
+
+.gm-combat-controls button:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+}
+
 .combat-log {
   position: relative;
   flex: 0 0 auto;
@@ -450,6 +609,33 @@ button:hover {
 .shadow-list-scroll {
   flex: 1;
   overflow-y: auto;
+}
+
+.library-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  min-height: 42px;
+  margin-bottom: 0;
+  border-bottom: 1px solid #444;
+  flex-shrink: 0;
+}
+
+.library-tab {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 8px 0;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.library-tab:hover {
+  background: rgba(255, 255, 255, .05);
+}
+
+.library-tab.active {
+  color: white;
+  border-bottom: 2px solid #fff;
 }
 
 .player-quick-reference {
@@ -1646,117 +1832,6 @@ button:hover {
   text-align: center;
 }
 
-.affinity-cell {
-
-  position: relative;
-
-  width: 40px;
-  height: 40px;
-
-  display: flex;
-
-  justify-content: center;
-  align-items: center;
-
-  font-size: .8rem;
-  font-weight: 600;
-  letter-spacing: .04em;
-  overflow: hidden;
-  text-shadow:
-    3px 3px 5px #000,
-    -3px -3px 5px #000,
-    3px -3px 5px #000,
-    -3px 3px 5px #000,
-    0 0 10px #000;
-
-  appearance: none;
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-}
-
-.affinity-cell::before {
-
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 80%;
-
-  opacity: .7;
-
-  pointer-events: none;
-}
-
-.player-combatant-row .affinity-cell {
-  width: 44px;
-  margin-right: -4px;
-}
-
-.player-combatant-row .affinity-cell::before {
-  inset: 2px 0;
-  background-size: 100% 100%;
-  mix-blend-mode: lighten;
-}
-
-.affinity-cell:hover {
-  background: transparent;
-  filter: none;
-}
-
-.affinity-cell.gm-clickable {
-  cursor: pointer;
-}
-
-.affinity-cell.gm-clickable:hover {
-  filter: brightness(1.25);
-}
-
-.fire::before {
-  background-image: url("/skills/SkillFire.png");
-}
-
-.ice::before {
-  background-image: url("/skills/SkillIce.png");
-}
-
-.wind::before {
-  background-image: url("/skills/SkillWind.png");
-}
-
-.electric::before {
-  background-image: url("/skills/SkillElectric.png");
-}
-
-.psychic::before {
-  background-image: url("/skills/SkillPsychic.png");
-}
-
-.nuclear::before {
-  background-image: url("/skills/SkillNuclear.png");
-}
-
-.bless::before {
-  background-image: url("/skills/SkillBless.png");
-}
-
-.curse::before {
-  background-image: url("/skills/SkillCurse.png");
-}
-
-.melee::before {
-  background-image: url("/skills/SkillMelee.png");
-}
-
-.ranged::before {
-  background-image: url("/skills/SkillRanged.png");
-}
-
 .player-affinity-spacer,
 .gm-affinity-spacer {
   min-width: 0;
@@ -1769,105 +1844,6 @@ button:hover {
 
 .gm-combatant-row .player-affinity-fill {
   grid-column: span 1;
-}
-
-.shadow-name-button {
-  border: none;
-  background: none;
-  font-size: 12px;
-  color: inherit;
-  width: 100%;
-  min-height: 38px;
-  padding: 0;
-
-  text-align: left;
-
-  cursor: pointer;
-}
-
-.shadow-name-button:hover {
-  text-decoration: underline;
-}
-
-
-
-.shadow-level {
-  text-align: center;
-}
-
-.library-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-
-  min-height: 42px;
-  margin-bottom: 0;
-
-  border-bottom: 1px solid #444;
-  flex-shrink: 0;
-}
-
-.library-tab {
-  border: none;
-  border-radius: 0;
-
-  background: transparent;
-
-  padding: 8px 0;
-
-  color: #aaa;
-
-  cursor: pointer;
-}
-
-.library-tab:hover {
-  background: rgba(255, 255, 255, .05);
-}
-
-.library-tab.active {
-  color: white;
-  border-bottom: 2px solid #fff;
-}
-
-.gm-combat-controls {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 42px;
-  gap: 24px;
-  padding: 0 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.gm-combat-controls button {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: inherit;
-  padding: 8px 4px;
-  margin: 0;
-  border-radius: 0;
-  font: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-  opacity: 0.55;
-  transition:
-    opacity 0.15s ease,
-    color 0.15s ease;
-}
-
-.gm-combat-controls button:hover {
-  opacity: 1;
-}
-
-.gm-combat-controls button:active {
-  opacity: 0.75;
-}
-
-.gm-combat-controls button:focus-visible {
-  outline: 1px solid currentColor;
-  outline-offset: 3px;
 }
 
 .turn-number {
