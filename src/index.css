@@ -191,8 +191,12 @@ button:hover {
   cursor: pointer;
 }
 
-.shadow-name-button:hover {
-  text-decoration: underline;
+.shadow-name-button:hover,
+.combatant-name-button:hover,
+.player-detail-button:hover {
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
 }
 
 .affinity-list {
@@ -940,6 +944,18 @@ button:hover {
   white-space: nowrap;
 }
 
+.player-detail-button {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .player-edit-button {
   min-height: 28px;
   padding: 3px 4px;
@@ -1539,12 +1555,14 @@ button:hover {
   padding: 7px 10px;
 }
 
-.current-turn {
-  background: rgba(255, 72, 72, 0.1);
-  box-shadow: inset 0 0 16px rgba(255, 72, 72, 0.12);
+.combatant-row.current-turn {
+  background: rgba(190, 24, 24, 0.42);
+  box-shadow:
+    inset 4px 0 0 #ff5555,
+    inset 0 0 18px rgba(255, 72, 72, 0.28);
 }
 
-.turn-highlight {
+.turn-highlight:not(.current-turn) {
   background: transparent;
 }
 
@@ -1892,6 +1910,19 @@ button:hover {
   font-size: 1.4rem;
 }
 
+.shadow-details-header-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #aaa;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.shadow-details-header-meta strong {
+  color: #eee;
+}
+
 .shadow-details-level {
   color: #aaa;
   font-size: 0.9rem;
@@ -1910,8 +1941,7 @@ button:hover {
   margin-bottom: 14px;
 }
 
-.shadow-details-meta>div,
-.shadow-details-combat>div {
+.shadow-details-meta>div {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -2036,6 +2066,10 @@ button:hover {
   margin-top: 16px;
 }
 
+.player-details-stats {
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+}
+
 .shadow-stat {
   display: grid;
   grid-template-rows: auto auto auto;
@@ -2101,6 +2135,20 @@ button:hover {
 
 .shadow-skill-table.compact tr > :nth-child(2) {
   width: 22%;
+  text-align: center;
+}
+
+.player-details-table tr:not(.shadow-skill-description) > :first-child {
+  width: 48%;
+}
+
+.player-details-table tr:not(.shadow-skill-description) > :nth-child(2) {
+  width: 24%;
+  text-align: center;
+}
+
+.player-details-table tr:not(.shadow-skill-description) > :nth-child(3) {
+  width: 28%;
   text-align: center;
 }
 

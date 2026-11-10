@@ -153,7 +153,7 @@ export default function ShadowDetailsPanel({
         return (
             <aside className="shadow-details-panel empty">
                 <p>
-                    Select a Shadow to view its details.
+                    Select a Shadow or non-player to view its details.
                 </p>
             </aside>
         )
@@ -198,9 +198,15 @@ export default function ShadowDetailsPanel({
                     {shadow.name}
                 </h2>
 
-                <span className="shadow-details-level">
-                    TL {shadow.level ?? "—"}
-                </span>
+                <div className="shadow-details-header-meta">
+                    <span>
+                        Armor <strong>{armorTotal}</strong>
+                    </span>
+                    <span aria-hidden="true">|</span>
+                    <span className="shadow-details-level">
+                        TL {shadow.level ?? "—"}
+                    </span>
+                </div>
             </header>
 
 
@@ -228,105 +234,6 @@ export default function ShadowDetailsPanel({
 
             </section>
 
-
-            <section className="shadow-details-combat">
-
-                <div>
-                    <span className="shadow-details-label">
-                        HP
-                    </span>
-
-                    <strong>
-                        {shadow.max_hp}
-                    </strong>
-                </div>
-
-                <div>
-                    <span className="shadow-details-label">
-                        Armor
-                    </span>
-
-                    <strong>
-                        {armorTotal >= 0 ? `${armorTotal}` : armorTotal}
-                    </strong>
-                </div>
-
-            </section>
-
-            <section className="shadow-details-affinities">
-                <h3>Affinities</h3>
-                <div className="shadow-affinity-grid">
-                    <AffinityGrid
-                        affinities={
-                            shadow.shadow_affinities
-                        }
-                        revealHiddenValues={true}
-                        onAffinityClick={(affinity) =>
-                            onAffinityToggle(
-                                affinity.id,
-                                !affinity.discovered
-                            )
-                        }
-                    />
-                </div>
-            </section>
-
-            <section className="shadow-stats">
-
-                <div className="shadow-stat">
-                    <span className="shadow-stat-label">
-                        STR
-                    </span>
-
-                    <span className="shadow-stat-value">
-                        {stats
-                            ? `${stats.strength >= 0 ? "+" : ""}${stats.strength}`
-                            : "—"}
-                    </span>
-                </div>
-
-
-                <div className="shadow-stat">
-                    <span className="shadow-stat-label">
-                        AGI
-                    </span>
-
-                    <span className="shadow-stat-value">
-                        {stats
-                            ? `${stats.agility >= 0 ? "+" : ""}${stats.agility}`
-                            : "—"}
-                    </span>
-                </div>
-
-
-                <div className="shadow-stat">
-                    <span className="shadow-stat-label">
-                        END
-                    </span>
-
-                    <span className="shadow-stat-value">
-                        {stats
-                            ? `${stats.endurance >= 0 ? "+" : ""}${stats.endurance}`
-                            : "—"}
-                    </span>
-                </div>
-
-
-                <div className="shadow-stat">
-                    <span className="shadow-stat-label">
-                        MAG
-                    </span>
-
-                    <span className="shadow-stat-value">
-                        {stats
-                            ? `${stats.magic >= 0 ? "+" : ""}${stats.magic}`
-                            : "—"}
-                    </span>
-                </div>
-
-            </section>
-
-
             <SkillTable
                 title="Skills"
                 skills={regularSkills}
@@ -351,6 +258,57 @@ export default function ShadowDetailsPanel({
                 showAffinityAndRoll={false}
                 highlightedSkillId={highlightedSkillId}
             />
+
+            <section className="shadow-stats">
+                <div className="shadow-stat">
+                    <span className="shadow-stat-label">STR</span>
+                    <span className="shadow-stat-value">
+                        {stats
+                            ? `${stats.strength >= 0 ? "+" : ""}${stats.strength}`
+                            : "—"}
+                    </span>
+                </div>
+                <div className="shadow-stat">
+                    <span className="shadow-stat-label">AGI</span>
+                    <span className="shadow-stat-value">
+                        {stats
+                            ? `${stats.agility >= 0 ? "+" : ""}${stats.agility}`
+                            : "—"}
+                    </span>
+                </div>
+                <div className="shadow-stat">
+                    <span className="shadow-stat-label">END</span>
+                    <span className="shadow-stat-value">
+                        {stats
+                            ? `${stats.endurance >= 0 ? "+" : ""}${stats.endurance}`
+                            : "—"}
+                    </span>
+                </div>
+                <div className="shadow-stat">
+                    <span className="shadow-stat-label">MAG</span>
+                    <span className="shadow-stat-value">
+                        {stats
+                            ? `${stats.magic >= 0 ? "+" : ""}${stats.magic}`
+                            : "—"}
+                    </span>
+                </div>
+            </section>
+
+            <section className="shadow-details-affinities">
+                <h3>Affinities</h3>
+                <div className="shadow-affinity-grid">
+                    <AffinityGrid
+                        affinities={shadow.shadow_affinities}
+                        revealHiddenValues={true}
+                        onAffinityClick={(affinity) =>
+                            onAffinityToggle(
+                                affinity.id,
+                                !affinity.discovered
+                            )
+                        }
+                    />
+                </div>
+            </section>
 
         </aside>
     )

@@ -8,7 +8,7 @@ import {
     updateCombatantDowned,
     updateCombatantCondition
 } from "../services/combatants"
-import type { AffinityElement, Combatant, Shadow } from "../types"
+import type { AffinityElement, Combatant, Player, Shadow } from "../types"
 import { supabase } from "../supabase"
 import { AFFINITY_LABELS, AFFINITY_ORDER } from "../constants/affinities"
 import { getConditions } from "../services/conditions"
@@ -38,10 +38,13 @@ import {
 
 type EncounterPageProps = Readonly<{
     shadows: Shadow[]
+    players?: Player[]
     playerView: boolean
     onRefreshShadows: () => Promise<void>
     onSelectShadow: (shadow: Shadow, combatant?: Combatant) => void
     onSyncSelectedShadow?: (shadow: Shadow, combatant: Combatant) => void
+    onSelectPlayer?: (player: Player, combatant: Combatant) => void
+    onSyncSelectedPlayer?: (player: Player, combatant: Combatant) => void
     onDamageLogged?: (text: string) => void
     lootYen: number
     lootItems: string[]
@@ -54,10 +57,13 @@ type EncounterPageProps = Readonly<{
 
 export default function EncounterPage({
     shadows,
+    players = [],
     playerView,
     onRefreshShadows,
     onSelectShadow,
     onSyncSelectedShadow,
+    onSelectPlayer,
+    onSyncSelectedPlayer,
     onDamageLogged,
     lootYen,
     lootItems,
@@ -292,21 +298,34 @@ export default function EncounterPage({
                     combatant.is_current_turn
             )
 
-        if (
-            currentCombatant?.combatant_type !== "shadow" ||
-            currentCombatant.shadow_id === null
-        ) {
+        if (!currentCombatant) {
             return
         }
 
-        const shadow = shadows.find(
-            (item) => item.id === currentCombatant.shadow_id
-        )
+        if (
+            currentCombatant.combatant_type === "shadow" &&
+            currentCombatant.shadow_id !== null
+        ) {
+            const shadow = shadows.find(
+                (item) => item.id === currentCombatant.shadow_id
+            )
 
-        if (shadow) {
-            onSyncSelectedShadow?.(shadow, currentCombatant)
+            if (shadow) {
+                onSyncSelectedShadow?.(shadow, currentCombatant)
+            }
+            return
         }
-    }, [combatants, shadows, onSyncSelectedShadow])
+
+        if (currentCombatant.player_id !== null) {
+            const player = players.find(
+                (item) => item.id === currentCombatant.player_id
+            )
+
+            if (player && !player.is_player) {
+                onSyncSelectedPlayer?.(player, currentCombatant)
+            }
+        }
+    }, [combatants, players, shadows, onSyncSelectedPlayer, onSyncSelectedShadow])
 
     async function handleRemoveCombatant(
         id: number
@@ -526,9 +545,15 @@ export default function EncounterPage({
                             shadow={combatant.shadow_id
                                 ? shadowMap.get(combatant.shadow_id)
                                 : undefined}
+                            player={combatant.player_id === null
+                                ? undefined
+                                : players.find((player) => player.id === combatant.player_id)}
                             playerView={playerView}
                             conditions={conditions}
                             onSelectShadow={onSelectShadow}
+                            onSelectPlayer={(player, selectedCombatant) =>
+                                onSelectPlayer?.(player, selectedCombatant)
+                            }
                             onDamage={handleDamage}
                             onToggleDowned={handleToggleDowned}
                             onConditionChange={handleConditionChange}

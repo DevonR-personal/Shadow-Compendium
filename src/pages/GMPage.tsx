@@ -8,6 +8,7 @@ import { damageAllShadowCombatants } from "../services/combatants"
 import { useCombatController } from "../hooks/useCombatController"
 import type { TurnHighlights } from "../utils/turnHighlights"
 import PlayerSkillEditor from "../components/PlayerSkillEditor"
+import PlayerDetailsPanel from "../components/PlayerDetailsPanel"
 import CombatLog from "../components/CombatLog"
 import {
     appendCombatLogEntry,
@@ -65,6 +66,8 @@ export default function GMPage({
         useState<Combatant | null>(null)
     const [selectedPlayer, setSelectedPlayer] =
         useState<Player | null>(null)
+    const [selectedPlayerDetails, setSelectedPlayerDetails] =
+        useState<Player | null>(null)
     const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([])
     const syncedCombatantIdRef = useRef<number | null>(null)
     const {
@@ -99,13 +102,32 @@ export default function GMPage({
 
     const handleShadowClicked = useCallback((shadow: Shadow, combatant?: Combatant) => {
         setSelectedShadow(shadow)
+        setSelectedPlayerDetails(null)
         setSelectedCombatant(combatant ?? null)
+        setSideTab("details")
+    }, [])
+
+    const handlePlayerClicked = useCallback((player: Player, combatant: Combatant) => {
+        setSelectedShadow(null)
+        setSelectedPlayerDetails(player)
+        setSelectedCombatant(combatant)
         setSideTab("details")
     }, [])
 
     // Keeps the details data fresh; only a different current combatant changes the tab.
     const handleCurrentShadowSynced = useCallback((shadow: Shadow, combatant: Combatant) => {
         setSelectedShadow(shadow)
+        setSelectedPlayerDetails(null)
+        setSelectedCombatant(combatant)
+        if (syncedCombatantIdRef.current !== combatant.id) {
+            syncedCombatantIdRef.current = combatant.id
+            setSideTab("details")
+        }
+    }, [])
+
+    const handleCurrentPlayerSynced = useCallback((player: Player, combatant: Combatant) => {
+        setSelectedShadow(null)
+        setSelectedPlayerDetails(player)
         setSelectedCombatant(combatant)
         if (syncedCombatantIdRef.current !== combatant.id) {
             syncedCombatantIdRef.current = combatant.id
@@ -236,10 +258,13 @@ export default function GMPage({
                 <div className="gm-combat-body">
                     <EncounterPage
                         shadows={shadows}
+                        players={players}
                         playerView={false}
                         onRefreshShadows={onRefreshShadows}
                         onSelectShadow={handleShadowClicked}
                         onSyncSelectedShadow={handleCurrentShadowSynced}
+                        onSelectPlayer={handlePlayerClicked}
+                        onSyncSelectedPlayer={handleCurrentPlayerSynced}
                         onDamageLogged={logDamage}
                         lootYen={combatLoot.yen}
                         lootItems={combatLoot.items}
@@ -308,7 +333,23 @@ export default function GMPage({
                                             }
                                             aria-label={`Include ${player.name} in initiative`}
                                         />
-                                        <span>{player.name}</span>
+                                        {player.is_player ? (
+                                            <span>{player.name}</span>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                className="player-detail-button"
+                                                aria-label={`View ${player.name} details`}
+                                                onClick={() => {
+                                                    setSelectedShadow(null)
+                                                    setSelectedCombatant(null)
+                                                    setSelectedPlayerDetails(player)
+                                                    setSideTab("details")
+                                                }}
+                                            >
+                                                {player.name}
+                                            </button>
+                                        )}
                                         <button
                                             type="button"
                                             className="player-edit-button"
@@ -323,12 +364,16 @@ export default function GMPage({
                     )}
 
                     {sideTab === "details" && (
-                        <ShadowDetailsPanel
-                            shadow={selectedShadow}
-                            combatant={selectedCombatant}
-                            onAffinityToggle={handleAffinityToggle}
-                            highlightedSkillId={highlightedSkillId}
-                        />
+                        selectedPlayerDetails ? (
+                            <PlayerDetailsPanel player={selectedPlayerDetails} />
+                        ) : (
+                            <ShadowDetailsPanel
+                                shadow={selectedShadow}
+                                combatant={selectedCombatant}
+                                onAffinityToggle={handleAffinityToggle}
+                                highlightedSkillId={highlightedSkillId}
+                            />
+                        )
                     )}
 
                 </div>

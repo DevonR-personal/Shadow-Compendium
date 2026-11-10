@@ -1,4 +1,4 @@
-import type { Combatant, Shadow } from "../types"
+import type { Combatant, Player, Shadow } from "../types"
 import type { getConditions } from "../services/conditions"
 import {
     type ModifierKey,
@@ -13,9 +13,11 @@ import HealthBar from "./HealthBar"
 type CombatantRowProps = {
     readonly combatant: Combatant
     readonly shadow: Shadow | undefined
+    readonly player: Player | undefined
     readonly playerView: boolean
     readonly conditions: Awaited<ReturnType<typeof getConditions>>["data"]
     readonly onSelectShadow: (shadow: Shadow, combatant?: Combatant) => void
+    readonly onSelectPlayer: (player: Player, combatant: Combatant) => void
     readonly onDamage: (combatant: Combatant) => void
     readonly onToggleDowned: (combatant: Combatant) => void
     readonly onConditionChange: (
@@ -36,14 +38,28 @@ type CombatantRowProps = {
 function CombatantName({
     combatant,
     shadow,
+    player,
     onSelectShadow,
-}: Pick<CombatantRowProps, "combatant" | "shadow" | "onSelectShadow">) {
+    onSelectPlayer,
+}: Pick<CombatantRowProps, "combatant" | "shadow" | "player" | "onSelectShadow" | "onSelectPlayer">) {
     if (combatant.combatant_type === "shadow" && shadow) {
         return (
             <button
                 type="button"
                 className="combatant-name-button"
                 onClick={() => onSelectShadow(shadow, combatant)}
+            >
+                {combatant.display_name}
+            </button>
+        )
+    }
+
+    if (combatant.combatant_type === "player" && player && !player.is_player) {
+        return (
+            <button
+                type="button"
+                className="combatant-name-button"
+                onClick={() => onSelectPlayer(player, combatant)}
             >
                 {combatant.display_name}
             </button>
@@ -285,9 +301,11 @@ function CombatantHealth({
 export default function CombatantRow({
     combatant,
     shadow,
+    player,
     playerView,
     conditions,
     onSelectShadow,
+    onSelectPlayer,
     onDamage,
     onToggleDowned,
     onConditionChange,
@@ -324,7 +342,9 @@ export default function CombatantRow({
                     <CombatantName
                         combatant={combatant}
                         shadow={shadow}
+                        player={player}
                         onSelectShadow={onSelectShadow}
+                        onSelectPlayer={onSelectPlayer}
                     />
                 </span>
 
