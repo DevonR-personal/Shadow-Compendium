@@ -271,14 +271,26 @@ function CombatantAffinities({
 
 function CombatantHealth({
     combatant,
+    player,
     playerView,
     onDamage,
-}: Pick<CombatantRowProps, "combatant" | "playerView" | "onDamage">) {
+}: Pick<CombatantRowProps, "combatant" | "playerView" | "onDamage"> & {
+    readonly player: Player | undefined
+}) {
     if (playerView && combatant.combatant_type === "shadow") {
         return (
             <HealthBar
                 hp={combatant.hp}
                 maxHp={combatant.max_hp}
+            />
+        )
+    }
+
+    if (playerView && combatant.combatant_type === "player" && player && !player.is_player) {
+        return (
+            <HealthBar
+                hp={player.current_hp}
+                maxHp={player.maximum_hp}
             />
         )
     }
@@ -293,7 +305,9 @@ function CombatantHealth({
             type="button"
             onClick={() => onDamage(combatant)}
         >
-            {combatant.hp ?? "-"}/{combatant.max_hp ?? "-"}
+            {combatant.combatant_type === "player" && player && !player.is_player
+                ? `${player.current_hp ?? "-"}/${player.maximum_hp ?? "-"}`
+                : `${combatant.hp ?? "-"}/${combatant.max_hp ?? "-"}`}
         </button>
     )
 }
@@ -388,6 +402,7 @@ export default function CombatantRow({
 
                 <CombatantHealth
                     combatant={combatant}
+                    player={player}
                     playerView={playerView}
                     onDamage={onDamage}
                 />

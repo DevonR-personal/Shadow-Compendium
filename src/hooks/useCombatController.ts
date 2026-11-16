@@ -3,9 +3,9 @@ import type { Combatant, Player, Shadow } from "../types"
 import { rollDice } from "../utils/dice"
 import {
     getInitiativePlayers,
-    getPlayers,
     updatePlayerInitiative,
 } from "../services/players"
+import { usePlayers } from "./usePlayers"
 import {
     getCombatants,
     updateCombatant,
@@ -165,24 +165,13 @@ export function useCombatController({
     onCombatLootChange,
     onTurnHighlightsChange,
 }: UseCombatControllerProps) {
-    const [players, setPlayers] = useState<Player[]>([])
+    const { players, setPlayers, notifyPlayersChanged } = usePlayers()
     const [playerRolls, setPlayerRolls] = useState<Record<number, number>>({})
     const [combatActive, setCombatActive] = useState(false)
     const [turnNumber, setTurnNumber] = useState(0)
     const [showInitiativeWindow, setShowInitiativeWindow] = useState(false)
 
     useEffect(() => {
-        async function loadPlayers() {
-            const result = await getPlayers()
-
-            if (result.error) {
-                console.error(result.error)
-                return
-            }
-
-            setPlayers(result.data)
-        }
-
         async function loadCombatState() {
             const result = await getCombatActive()
 
@@ -195,7 +184,6 @@ export function useCombatController({
             setTurnNumber(result.turnNumber)
         }
 
-        void loadPlayers()
         void loadCombatState()
     }, [])
 
@@ -444,6 +432,7 @@ export function useCombatController({
 
     return {
         players,
+        notifyPlayersChanged,
         playerRolls,
         combatActive,
         turnNumber,

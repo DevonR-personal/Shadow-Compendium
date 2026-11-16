@@ -72,6 +72,7 @@ export default function GMPage({
     const syncedCombatantIdRef = useRef<number | null>(null)
     const {
         players,
+        notifyPlayersChanged,
         playerRolls,
         combatActive,
         turnNumber,
@@ -259,6 +260,7 @@ export default function GMPage({
                     <EncounterPage
                         shadows={shadows}
                         players={players}
+                        onPlayersChanged={notifyPlayersChanged}
                         playerView={false}
                         onRefreshShadows={onRefreshShadows}
                         onSelectShadow={handleShadowClicked}

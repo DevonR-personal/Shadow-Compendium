@@ -1,5 +1,6 @@
 import EncounterPage from "./EncounterPage"
 import type { Shadow } from "../types"
+import { usePlayers } from "../hooks/usePlayers"
 
 type PlayerPageProps = Readonly<{
     readonly shadows: Shadow[]
@@ -22,9 +23,12 @@ export default function PlayerPage({
     highlightedPlayerCombatantId,
     onRefreshShadows,
 }: PlayerPageProps) {
+    const { players } = usePlayers()
+
     return (
         <EncounterPage
             shadows={shadows}
+            players={players}
             playerView={true}
             onRefreshShadows={onRefreshShadows}
             onSelectShadow={() => {}}

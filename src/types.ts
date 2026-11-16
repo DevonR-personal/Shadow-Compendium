@@ -87,6 +87,8 @@ export type Player = {
   is_player: boolean
   weapon1_id: number | null
   weapon2_id: number | null
+  current_hp: number | null
+  maximum_hp: number | null
 }
 
 export type Skill = {

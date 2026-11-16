@@ -8,6 +8,7 @@ import {
     updateCombatantDowned,
     updateCombatantCondition
 } from "../services/combatants"
+import { updatePlayerHealth } from "../services/players"
 import type { AffinityElement, Combatant, Player, Shadow } from "../types"
 import { supabase } from "../supabase"
 import { AFFINITY_LABELS, AFFINITY_ORDER } from "../constants/affinities"
@@ -39,6 +40,7 @@ import {
 type EncounterPageProps = Readonly<{
     shadows: Shadow[]
     players?: Player[]
+    onPlayersChanged?: () => Promise<{ message: string } | null>
     playerView: boolean
     onRefreshShadows: () => Promise<void>
     onSelectShadow: (shadow: Shadow, combatant?: Combatant) => void
@@ -58,6 +60,7 @@ type EncounterPageProps = Readonly<{
 export default function EncounterPage({
     shadows,
     players = [],
+    onPlayersChanged,
     playerView,
     onRefreshShadows,
     onSelectShadow,
@@ -370,15 +373,39 @@ export default function EncounterPage({
             affinity?.value ?? null,
             shadow?.armor ?? 0,
         )
-        const maximumHp = Math.max(0, target.max_hp ?? target.hp ?? 0)
-        const currentHp = Math.max(0, Math.min(maximumHp, target.hp ?? 0))
+        const npc = target.combatant_type === "player" && target.player_id !== null
+            ? players.find((player) => player.id === target.player_id && !player.is_player)
+            : undefined
+        const maximumHp = Math.max(
+            0,
+            npc
+                ? npc.maximum_hp ?? npc.current_hp ?? 0
+                : target.max_hp ?? target.hp ?? 0
+        )
+        const currentHp = Math.max(
+            0,
+            Math.min(
+                maximumHp,
+                npc ? npc.current_hp ?? 0 : target.hp ?? 0
+            )
+        )
         const nextHp = applyDamageOutcomeToHitPoints(currentHp, maximumHp, outcome)
 
         if (nextHp !== currentHp) {
-            const error = await updateCombatant(target.id, { hp: nextHp })
+            const error = npc
+                ? await updatePlayerHealth(npc.id, nextHp)
+                : await updateCombatant(target.id, { hp: nextHp })
             if (error) {
                 setError(error.message)
                 return
+            }
+
+            if (npc && onPlayersChanged) {
+                const refreshError = await onPlayersChanged()
+                if (refreshError) {
+                    setError(refreshError.message)
+                    return
+                }
             }
         }
 
