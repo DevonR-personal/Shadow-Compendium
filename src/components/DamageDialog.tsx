@@ -12,6 +12,7 @@ type DamageDialogProps = {
         amount: number,
         damageType: DamageType,
         sourceId: number | null,
+        revealAmount: boolean,
     ) => void
 }
 
@@ -39,11 +40,12 @@ export default function DamageDialog({
     const [amount, setAmount] = useState("")
     const [damageType, setDamageType] = useState<DamageType>(null)
     const [sourceId, setSourceId] = useState<number | null>(defaultSourceId)
+    const [revealAmount, setRevealAmount] = useState(true)
 
     function submit(event: React.SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (amount === "") return
-        onConfirm(Number(amount), damageType, sourceId)
+        onConfirm(Number(amount), damageType, sourceId, revealAmount)
     }
 
     return (
@@ -139,6 +141,14 @@ export default function DamageDialog({
                                 ))}
                             </select>
                         </span>
+                    </label>
+                    <label className="damage-dialog-visibility">
+                        <input
+                            type="checkbox"
+                            checked={revealAmount}
+                            onChange={(event) => setRevealAmount(event.target.checked)}
+                        />
+                        Reveal damage or healing amount to players
                     </label>
                     <footer className="damage-dialog-actions">
                         <button type="button" onClick={onCancel}>Cancel</button>

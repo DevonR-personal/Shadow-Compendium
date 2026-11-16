@@ -6,6 +6,7 @@ import ShadowDetailsPanel from "./ShadowDetailsPanel"
 import { updateAffinityDiscovery } from "../services/affinities"
 import { damageAllShadowCombatants } from "../services/combatants"
 import { useCombatController } from "../hooks/useCombatController"
+import type { useHealthNotifications } from "../hooks/useHealthNotifications"
 import type { TurnHighlights } from "../utils/turnHighlights"
 import PlayerSkillEditor from "../components/PlayerSkillEditor"
 import PlayerDetailsPanel from "../components/PlayerDetailsPanel"
@@ -25,6 +26,7 @@ const SIDE_PANEL_TABS: { id: SidePanelTab; label: string }[] = [
 ]
 type GMPageProps = {
     shadows: Shadow[]
+    healthNotifications: ReturnType<typeof useHealthNotifications>
     combatLoot: {
         yen: number
         items: string[]
@@ -44,6 +46,7 @@ type GMPageProps = {
 
 export default function GMPage({
     shadows,
+    healthNotifications,
     combatLoot,
     onCombatLootChange,
     onTurnHighlightsChange,
@@ -195,7 +198,9 @@ export default function GMPage({
             return
         }
 
-        const error = await damageAllShadowCombatants(damage, shadows)
+        const error = await damageAllShadowCombatants(damage, shadows, (id, previousHp, nextHp) => {
+            healthNotifications.notifyHealthChange(id, previousHp, nextHp, true)
+        })
 
         if (error) {
             console.error(error)
@@ -258,6 +263,7 @@ export default function GMPage({
 
                 <div className="gm-combat-body">
                     <EncounterPage
+                        healthNotifications={healthNotifications}
                         shadows={shadows}
                         players={players}
                         onPlayersChanged={notifyPlayersChanged}

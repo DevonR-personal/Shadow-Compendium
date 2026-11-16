@@ -7,9 +7,11 @@ import PlayerPage from './pages/PlayerPage'
 import { useShadowLibrary } from './hooks/useShadowLibrary'
 import { useCombatLoot } from './hooks/useCombatLoot'
 import { useShadowEditor } from './hooks/useShadowEditor'
+import { useHealthNotifications } from './hooks/useHealthNotifications'
 import type { TurnHighlights } from './utils/turnHighlights'
 
 function App() {
+  const healthNotifications = useHealthNotifications()
   const {
     shadows,
     setShadows,
@@ -116,6 +118,7 @@ function App() {
   if (isPlayerView) {
     return (
       <PlayerPage
+        healthNotifications={healthNotifications}
         shadows={shadows}
         onRefreshShadows={refreshShadows}
         combatLoot={combatLoot}
@@ -127,6 +130,7 @@ function App() {
 
   return (
     <GMPage
+      healthNotifications={healthNotifications}
       shadows={shadows}
       loading={loading}
       error={error ?? libraryError}

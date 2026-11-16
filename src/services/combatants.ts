@@ -24,7 +24,8 @@ export async function getCombatants() {
 
 export async function damageAllShadowCombatants(
     amount: number,
-    shadows: Shadow[]
+    shadows: Shadow[],
+    onHealthChanged: (combatantId: number, previousHp: number, nextHp: number) => void,
 ) {
     const result = await getCombatants()
 
@@ -54,6 +55,7 @@ export async function damageAllShadowCombatants(
         if (error) {
             return error
         }
+        onHealthChanged(combatant.id, currentHP, nextHP)
     }
 
     return null

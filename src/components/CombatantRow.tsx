@@ -9,12 +9,14 @@ import {
 } from "../utils/weaknessCutin"
 import AffinityGrid from "./AffinityGrid"
 import HealthBar from "./HealthBar"
+import type { HealthNotification } from "../utils/healthNotifications"
 
 type CombatantRowProps = {
     readonly combatant: Combatant
     readonly shadow: Shadow | undefined
     readonly player: Player | undefined
     readonly playerView: boolean
+    readonly healthNotifications: readonly HealthNotification[]
     readonly conditions: Awaited<ReturnType<typeof getConditions>>["data"]
     readonly onSelectShadow: (shadow: Shadow, combatant?: Combatant) => void
     readonly onSelectPlayer: (player: Player, combatant: Combatant) => void
@@ -273,8 +275,9 @@ function CombatantHealth({
     combatant,
     player,
     playerView,
+    healthNotifications,
     onDamage,
-}: Pick<CombatantRowProps, "combatant" | "playerView" | "onDamage"> & {
+}: Pick<CombatantRowProps, "combatant" | "playerView" | "onDamage" | "healthNotifications"> & {
     readonly player: Player | undefined
 }) {
     if (playerView && combatant.combatant_type === "shadow") {
@@ -282,6 +285,7 @@ function CombatantHealth({
             <HealthBar
                 hp={combatant.hp}
                 maxHp={combatant.max_hp}
+                notifications={healthNotifications}
             />
         )
     }
@@ -291,6 +295,7 @@ function CombatantHealth({
             <HealthBar
                 hp={player.current_hp}
                 maxHp={player.maximum_hp}
+                notifications={healthNotifications}
             />
         )
     }
@@ -317,6 +322,7 @@ export default function CombatantRow({
     shadow,
     player,
     playerView,
+    healthNotifications,
     conditions,
     onSelectShadow,
     onSelectPlayer,
@@ -404,6 +410,7 @@ export default function CombatantRow({
                     combatant={combatant}
                     player={player}
                     playerView={playerView}
+                    healthNotifications={healthNotifications}
                     onDamage={onDamage}
                 />
 

@@ -22,6 +22,8 @@ import type { TurnHighlights } from "../utils/turnHighlights"
 import { updateAffinityDiscovery } from "../services/affinities"
 import { getAffinity } from "../utils/affinities"
 import { formatDamageLog } from "../utils/combatLog"
+import { formatReflectNotice } from "../utils/healthNotifications"
+import type { useHealthNotifications } from "../hooks/useHealthNotifications"
 import {
     applyDamageOutcomeToHitPoints,
     resolveDamage,
@@ -39,6 +41,7 @@ import {
 
 type EncounterPageProps = Readonly<{
     shadows: Shadow[]
+    healthNotifications: ReturnType<typeof useHealthNotifications>
     players?: Player[]
     onPlayersChanged?: () => Promise<{ message: string } | null>
     playerView: boolean
@@ -59,6 +62,7 @@ type EncounterPageProps = Readonly<{
 
 export default function EncounterPage({
     shadows,
+    healthNotifications,
     players = [],
     onPlayersChanged,
     playerView,
@@ -361,6 +365,7 @@ export default function EncounterPage({
         enteredAmount: number,
         damageType: DamageType,
         sourceId: number | null,
+        revealAmount: boolean,
     ) {
         if (!damageTarget) return
         const target = damageTarget
@@ -400,6 +405,8 @@ export default function EncounterPage({
                 return
             }
 
+            healthNotifications.notifyHealthChange(target.id, currentHp, nextHp, revealAmount)
+
             if (npc && onPlayersChanged) {
                 const refreshError = await onPlayersChanged()
                 if (refreshError) {
@@ -430,7 +437,7 @@ export default function EncounterPage({
 
         if (outcome.kind === "reflect" && element) {
             broadcastReflectNotice(
-                `${outcome.amount} ${AFFINITY_LABELS[element]} damage was reflected!`,
+                formatReflectNotice(outcome.amount, AFFINITY_LABELS[element], revealAmount),
             )
         }
 
@@ -576,6 +583,9 @@ export default function EncounterPage({
                                 ? undefined
                                 : players.find((player) => player.id === combatant.player_id)}
                             playerView={playerView}
+                            healthNotifications={healthNotifications.notifications.filter(
+                                (notification) => notification.combatantId === combatant.id
+                            )}
                             conditions={conditions}
                             onSelectShadow={onSelectShadow}
                             onSelectPlayer={(player, selectedCombatant) =>
@@ -610,7 +620,9 @@ export default function EncounterPage({
                     sources={combatants.filter((combatant) => combatant.combatant_type === "player")}
                     defaultSourceId={combatants.find((combatant) => combatant.is_current_turn && combatant.combatant_type === "player")?.id ?? null}
                     onCancel={() => setDamageTarget(null)}
-                    onConfirm={(amount, element, sourceId) => void handleDamageConfirm(amount, element, sourceId)}
+                    onConfirm={(amount, element, sourceId, revealAmount) =>
+                        void handleDamageConfirm(amount, element, sourceId, revealAmount)
+                    }
                 />
             )}
             {playerView && <PlayerQuickReference />}

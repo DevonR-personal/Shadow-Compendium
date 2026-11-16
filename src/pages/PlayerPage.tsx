@@ -1,9 +1,11 @@
 import EncounterPage from "./EncounterPage"
 import type { Shadow } from "../types"
 import { usePlayers } from "../hooks/usePlayers"
+import type { useHealthNotifications } from "../hooks/useHealthNotifications"
 
 type PlayerPageProps = Readonly<{
     readonly shadows: Shadow[]
+    healthNotifications: ReturnType<typeof useHealthNotifications>
     readonly combatLoot: {
         yen: number
         items: string[]
@@ -18,6 +20,7 @@ type PlayerPageProps = Readonly<{
 
 export default function PlayerPage({
     shadows,
+    healthNotifications,
     combatLoot,
     onCombatLootChange,
     highlightedPlayerCombatantId,
@@ -27,6 +30,7 @@ export default function PlayerPage({
 
     return (
         <EncounterPage
+            healthNotifications={healthNotifications}
             shadows={shadows}
             players={players}
             playerView={true}
