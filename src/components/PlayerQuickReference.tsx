@@ -295,7 +295,6 @@ export default function PlayerQuickReference({
         void loadPlayerReference()
     }, [onError, players, selectedPlayerId])
 
-    const selectedPlayer = players.find((player) => player.id === selectedPlayerId)
     const currentLuck = stats?.luck ?? 0
     const maximumLuck = stats?.max_luck ?? 0
 
@@ -328,17 +327,7 @@ export default function PlayerQuickReference({
                 ? "player-quick-reference collapsed"
                 : "player-quick-reference"}
         >
-            <button
-                type="button"
-                className="player-reference-toggle"
-                onClick={() => setCollapsed((value) => !value)}
-                aria-expanded={!collapsed}
-                aria-label={collapsed ? "Show player reference" : "Hide player reference"}
-            >
-                {collapsed ? "▲" : "▼"}
-            </button>
-            <div className="player-quick-reference-header">
-                <h2>{selectedPlayer?.name}</h2>
+            <div className="player-reference-controls">
                 <select
                     value={selectedPlayerId}
                     onChange={(event) => setSelectedPlayerId(Number(event.target.value))}
@@ -350,6 +339,15 @@ export default function PlayerQuickReference({
                         </option>
                     ))}
                 </select>
+                <button
+                    type="button"
+                    className="player-reference-toggle"
+                    onClick={() => setCollapsed((value) => !value)}
+                    aria-expanded={!collapsed}
+                    aria-label={collapsed ? "Show player reference" : "Hide player reference"}
+                >
+                    {collapsed ? "▲" : "▼"}
+                </button>
             </div>
 
             <div className="player-reference-stats-and-weapons">
