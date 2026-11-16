@@ -72,7 +72,6 @@ button:hover {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: hidden;
-  padding-right: 58px;
   padding-bottom: 0;
 }
 
@@ -650,6 +649,7 @@ button:hover {
   flex: 0 0 auto;
   background: #111;
   border-top: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 1.05rem;
 }
 
 .player-reference-toggle {
@@ -665,7 +665,7 @@ button:hover {
   border-radius: 0;
   background: #111;
   color: #ff4d4d;
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   line-height: 1;
 }
 
@@ -697,14 +697,24 @@ button:hover {
 
 .player-quick-reference-header h2 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
+}
+
+.player-reference-stats-and-weapons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
 .player-stat-strip {
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-column: span 2;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  grid-auto-flow: column;
   gap: 4px;
-  margin-bottom: 6px;
 }
 
 .player-stat-strip > div {
@@ -712,16 +722,16 @@ button:hover {
   justify-content: space-between;
   gap: 4px;
   min-width: 0;
-  padding: 3px 5px;
+  padding: 1px 5px;
   background: #1b1b1b;
-  font-size: 0.68rem;
+  font-size: 0.82rem;
 }
 
 .player-stat-strip span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #999;
+  color: #f0c674;
 }
 
 .player-stat-strip strong {
@@ -746,7 +756,7 @@ button:hover {
   border: 0;
   background: transparent;
   color: #b9c2d0;
-  font-size: 0.8rem;
+  font-size: 1rem;
   line-height: 1;
 }
 
@@ -763,38 +773,59 @@ button:hover {
 .player-reference-error {
   margin: 4px 0;
   color: #ff8080;
-  font-size: 0.68rem;
+  font-size: 0.82rem;
 }
 
-.player-quick-reference-tables {
+.player-weapon-list {
   display: grid;
-  grid-template-columns: minmax(110px, 1fr) minmax(0, 4fr);
-  gap: 8px;
+  grid-column: span 2;
+  grid-auto-rows: 1fr;
+  gap: 2px;
+  font-size: 0.82rem;
 }
 
-.player-weapon-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.68rem;
-}
-
-.player-weapon-table th,
-.player-weapon-table td {
-  padding: 4px 5px;
+.player-weapon-card {
+  display: grid;
+  grid-template-columns: fit-content(30%) minmax(0, 1fr);
   border: 1px solid #333;
-  text-align: left;
-  vertical-align: top;
+  background: #1b1b1b;
 }
 
-.player-weapon-table td:nth-child(2) {
+.player-weapon-summary {
+  min-width: 0;
+  padding: 1px 4px;
+  border-right: 1px solid #333;
+  overflow-wrap: anywhere;
+}
+
+.player-weapon-details {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: #f0c674;
-  white-space: nowrap;
+}
+
+.player-weapon-details span {
+  min-width: 2ch;
+  text-align: right;
+}
+
+.player-weapon-description {
+  min-width: 0;
+  padding: 1px 5px;
+  overflow-wrap: anywhere;
 }
 
 .player-reference-affinity {
   width: 18px;
   height: 15px;
   object-fit: contain;
+  vertical-align: middle;
+}
+
+.player-weapon-affinity {
+  width: 36px;
+  height: auto;
   vertical-align: middle;
 }
 
@@ -808,14 +839,14 @@ button:hover {
   min-width: 0;
   border: 1px solid #333;
   background: #1b1b1b;
-  font-size: 0.68rem;
+  font-size: 0.82rem;
 }
 
 .player-skill-card-summary {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px 22px;
+  grid-template-columns: minmax(0, 1fr) 28px 18px;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   min-height: 25px;
   padding: 3px 4px;
   border-bottom: 1px solid #333;
@@ -837,7 +868,7 @@ button:hover {
 .player-skill-card-description {
   min-height: 34px;
   padding: 4px;
-  color: #aaa;
+  color: #eee;
   overflow: hidden;
   line-height: 1.25;
 }

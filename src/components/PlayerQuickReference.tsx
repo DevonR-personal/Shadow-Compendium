@@ -5,6 +5,7 @@ import { getPlayerStats, updatePlayerLuck } from "../services/playerStats"
 import { getPlayerSkills } from "../services/playerSkills"
 import { getWeapons } from "../services/weapons"
 import { AFFINITY_LABELS } from "../constants/affinities"
+import { ELEMENT_IMAGES } from "../constants/skills"
 
 type PlayerQuickReferenceProps = Readonly<{
     readonly onError?: (message: string) => void
@@ -98,6 +99,13 @@ function affinityImage(element: string | null) {
     return `/icons/Icon_${label}.png`
 }
 
+function weaponAffinityImage(element: string | null) {
+    const skillImage = Object.entries(ELEMENT_IMAGES).find(
+        ([affinity]) => affinity === element?.toLowerCase()
+    )
+    return skillImage?.[1] ?? affinityImage(element)
+}
+
 function weaponModifier(weapon: Weapon, stats: PlayerStats | null) {
     if (!stats || !weapon.uses_stat) {
         return null
@@ -116,28 +124,28 @@ function WeaponRows({
     return (
         <>
             {weapons.map((weapon) => (
-                <tbody key={weapon.id}>
-                    <tr>
-                        <th scope="row">{weapon.name}</th>
-                            <td className={isShadowDerivedStat(weapon.uses_stat)
+                <div className="player-weapon-card" key={weapon.id}>
+                    <div className="player-weapon-summary">
+                        <strong>{weapon.name}</strong>
+                        <div className="player-weapon-details">
+                            <span className={isShadowDerivedStat(weapon.uses_stat)
                                 ? "shadow-derived-modifier"
                                 : ""}>
                                 {formatModifier(weaponModifier(weapon, stats))}
-                            </td>
-                        <td>
-                            {affinityImage(weapon.element) ? (
+                            </span>
+                            {weaponAffinityImage(weapon.element) ? (
                                 <img
-                                    className="player-reference-affinity"
-                                    src={affinityImage(weapon.element) ?? undefined}
+                                    className="player-weapon-affinity"
+                                    src={weaponAffinityImage(weapon.element) ?? undefined}
                                     alt={weapon.element ?? ""}
                                 />
                             ) : "—"}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colSpan={3}>{weapon.description ?? "No description."}</td>
-                    </tr>
-                </tbody>
+                        </div>
+                    </div>
+                    <div className="player-weapon-description">
+                        {weapon.description ?? "No description."}
+                    </div>
+                </div>
             ))}
         </>
     )
@@ -344,57 +352,60 @@ export default function PlayerQuickReference({
                 </select>
             </div>
 
-            <div className="player-stat-strip">
-                {Object.entries(STAT_LABELS).map(([key, label]) => (
-                    <div key={key}>
-                        <span>{label}</span>
-                        <strong className={isShadowDerivedStat(key)
-                            ? "shadow-derived-modifier"
-                            : ""}>
-                            {formatModifier(stats?.[key as StatKey])}
-                        </strong>
+            <div className="player-reference-stats-and-weapons">
+                <div className="player-stat-strip">
+                    {Object.entries(STAT_LABELS).map(([key, label]) => (
+                        <div key={key}>
+                            <span className={isShadowDerivedStat(key)
+                                ? "shadow-derived-modifier"
+                                : ""}>
+                                {label}
+                            </span>
+                            <strong className={isShadowDerivedStat(key)
+                                ? "shadow-derived-modifier"
+                                : ""}>
+                                {formatModifier(stats?.[key as StatKey])}
+                            </strong>
+                        </div>
+                    ))}
+                    <div>
+                        <span className="shadow-derived-modifier">Luck</span>
+                        <div className="player-luck-control">
+                            {maximumLuck > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => void changeLuck(-1)}
+                                    disabled={currentLuck <= 0}
+                                    aria-label="Decrease luck"
+                                >
+                                    −
+                                </button>
+                            )}
+                            <strong className="shadow-derived-modifier">
+                                {stats ? `${stats.luck}/${stats.max_luck}` : "—"}
+                            </strong>
+                            {maximumLuck > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => void changeLuck(1)}
+                                    disabled={currentLuck >= maximumLuck}
+                                    aria-label="Increase luck"
+                                >
+                                    +
+                                </button>
+                            )}
+                        </div>
                     </div>
-                ))}
-                <div>
-                    <span>Luck</span>
-                    <div className="player-luck-control">
-                        {maximumLuck > 0 && (
-                            <button
-                                type="button"
-                                onClick={() => void changeLuck(-1)}
-                                disabled={currentLuck <= 0}
-                                aria-label="Decrease luck"
-                            >
-                                −
-                            </button>
-                        )}
-                        <strong className="shadow-derived-modifier">
-                            {stats ? `${stats.luck}/${stats.max_luck}` : "—"}
-                        </strong>
-                        {maximumLuck > 0 && (
-                            <button
-                                type="button"
-                                onClick={() => void changeLuck(1)}
-                                disabled={currentLuck >= maximumLuck}
-                                aria-label="Increase luck"
-                            >
-                                +
-                            </button>
-                        )}
-                    </div>
+                </div>
+                <div className="player-weapon-list">
+                    <WeaponRows weapons={weapons} stats={stats} />
                 </div>
             </div>
 
             {loadError && <p className="player-reference-error">{loadError}</p>}
 
-            <div className="player-quick-reference-tables">
-                <table className="player-weapon-table">
-                    <WeaponRows weapons={weapons} stats={stats} />
-                </table>
-
-                <div className="player-skill-reference-grid">
-                    <PlayerSkillCards playerSkills={playerSkills} stats={stats} />
-                </div>
+            <div className="player-skill-reference-grid">
+                <PlayerSkillCards playerSkills={playerSkills} stats={stats} />
             </div>
         </section>
     )
