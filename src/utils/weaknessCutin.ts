@@ -3,7 +3,7 @@
 const WEAKNESS_CUTINS = {
     Wiz: { src: "/cutin/Wiz_cutin.mp4", match: null },
     Nik: { src: "/cutin/Nik_cutin.mp4", match: /nikolas/i },
-    Elle: { src: "/cutin/Elle_cutin.mp4", match: /\b(elle|kelsey)\b/i },
+    Elle: { src: "/cutin/Kel_cutin.mp4", match: /\b(elle|kelsey)\b/i },
     Lufel: { src: "/cutin/Lufel_cutin.mp4", match: /\b(lufel|ruferu)\b/i }
 } as const satisfies Record<string, { src: string; match: RegExp | null }>
 
