@@ -6,7 +6,8 @@ const WEAKNESS_CUTINS = {
     Nik: { src: "/cutin/Nik_cutin.mp4", match: /\b(nik|niko|nikolas|griffin)\b/i },
     Greta: { src: "/cutin/Greta_cutin.mp4", match: /\b(greta|kelsey|kel)\b/i },
     Lufel: { src: "/cutin/Lufel_cutin.mp4", match: /\b(lufel|ruferu)\b/i },
-    Marq: { src: "/cutin/Marq_cutin.mp4", match: /\b(marq|nyds)\b/i }
+    Marq: { src: "/cutin/Marq_cutin.mp4", match: /\b(marq|nyds)\b/i },
+    "8ball": { src: "/cutin/8ball_cutin.mp4", match: /\b(8[ -]?ball|jackson)\b/i },
 } as const satisfies Record<string, { src: string; match: RegExp | null }>
 
 export type WeaknessCutinCharacter = keyof typeof WEAKNESS_CUTINS

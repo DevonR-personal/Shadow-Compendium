@@ -1403,9 +1403,8 @@ button:hover {
 
 .weakness-cutin canvas {
   display: block;
-  width: min(100vw, 1280px);
-  max-height: 100vh;
-  object-fit: contain;
+  width: 100%;
+  height: auto;
 }
 
 .weakness-cutin button {
