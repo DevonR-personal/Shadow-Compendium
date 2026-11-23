@@ -148,7 +148,7 @@ export default function DamageDialog({
                             checked={revealAmount}
                             onChange={(event) => setRevealAmount(event.target.checked)}
                         />
-                        Reveal damage or healing amount to players
+                        {" "}Reveal damage or healing amount to players
                     </label>
                     <footer className="damage-dialog-actions">
                         <button type="button" onClick={onCancel}>Cancel</button>

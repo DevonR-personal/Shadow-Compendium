@@ -51,9 +51,9 @@ export function getTurnHighlights(
 
     const activeChance =
         turnNumber === 1
-            ? 80
+            ? 15
             : turnNumber === 2
-                ? 20
+                ? 10
                 : 5
     const selectedType = roll() <= activeChance
         ? "active"

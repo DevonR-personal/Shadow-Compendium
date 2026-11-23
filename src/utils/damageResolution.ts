@@ -51,16 +51,16 @@ export function resolveDamage(
         return { kind: "reflect", amount: safeAmount }
     }
 
-    const affinityModifier = affinity === "weak"
-        ? 2
+    const affinityAdjustedAmount = affinity === "weak"
+        ? safeAmount + 1
         : affinity === "resist"
-            ? -2
-            : 0
+            ? Math.ceil(safeAmount / 2)
+            : safeAmount
 
     return {
         kind: "damage",
         amount: safeAmount === 0
             ? 0
-            : Math.max(1, safeAmount + affinityModifier - Math.max(0, armor)),
+            : Math.max(1, affinityAdjustedAmount - Math.max(0, armor)),
     }
 }
