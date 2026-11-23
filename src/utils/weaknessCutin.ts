@@ -2,6 +2,7 @@
 // `match` is tested against the combatant's display name.
 const WEAKNESS_CUTINS = {
     Blank: { src: "/cutin/Blank_cutin.mp4", match: null },
+    Wiz: { src: "/cutin/Wiz_cutin.mp4", match: /\bwiz\b/i },
     Nik: { src: "/cutin/Nik_cutin.mp4", match: /\b(nik|niko|nikolas|griffin)\b/i },
     Greta: { src: "/cutin/Greta_cutin.mp4", match: /\b(greta|kelsey|kel)\b/i },
     Lufel: { src: "/cutin/Lufel_cutin.mp4", match: /\b(lufel|ruferu)\b/i },
