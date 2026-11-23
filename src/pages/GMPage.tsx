@@ -4,7 +4,11 @@ import { useCallback, useRef, useState } from "react"
 import type { Combatant, Player, Shadow } from "../types"
 import ShadowDetailsPanel from "./ShadowDetailsPanel"
 import { updateAffinityDiscovery } from "../services/affinities"
-import { damageAllShadowCombatants } from "../services/combatants"
+import {
+    damageAllShadowCombatants,
+    getCombatants,
+    removeShadowCombatants,
+} from "../services/combatants"
 import { useCombatController } from "../hooks/useCombatController"
 import type { useHealthNotifications } from "../hooks/useHealthNotifications"
 import type { TurnHighlights } from "../utils/turnHighlights"
@@ -72,6 +76,7 @@ export default function GMPage({
     const [selectedPlayerDetails, setSelectedPlayerDetails] =
         useState<Player | null>(null)
     const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([])
+    const [removingEnemies, setRemovingEnemies] = useState(false)
     const syncedCombatantIdRef = useRef<number | null>(null)
     const {
         players,
@@ -154,6 +159,47 @@ export default function GMPage({
 
         if (loot && (loot.yen > 0 || loot.items.length > 0)) {
             addLogEntry("loot", formatLootLog(loot))
+        }
+
+        return loot
+    }
+
+    async function handleRemoveEnemies() {
+        setRemovingEnemies(true)
+
+        try {
+            const result = await getCombatants()
+
+            if (result.error) {
+                console.error(result.error)
+                return
+            }
+
+            if (
+                combatActive &&
+                result.data.some((combatant) =>
+                    combatant.combatant_type === "shadow" && combatant.is_current_turn
+                )
+            ) {
+                const loot = await handleEndCombatClick()
+
+                if (!loot) {
+                    return
+                }
+            }
+
+            const error = await removeShadowCombatants()
+
+            if (error) {
+                console.error(error)
+                return
+            }
+
+            setSelectedCombatant((current) =>
+                current?.combatant_type === "shadow" ? null : current
+            )
+        } finally {
+            setRemovingEnemies(false)
         }
     }
     async function handleAffinityToggle(
@@ -246,6 +292,14 @@ export default function GMPage({
                         disabled={!combatActive}
                     >
                         All-Out Attack
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => void handleRemoveEnemies()}
+                        disabled={removingEnemies}
+                    >
+                        Remove Enemies
                     </button>
 
                     <button

@@ -117,7 +117,9 @@ function calculateCombatantInsertionPosition(
     combatants: CombatantPosition[],
     initiative: number
 ) {
-    let position = combatants.length
+    let position = combatants.length === 0
+        ? 0
+        : (combatants[combatants.length - 1].position ?? 0) + 1
 
     for (const combatant of combatants) {
         const existingInitiative = combatant.initiative ?? 0
@@ -270,6 +272,15 @@ export async function removeCombatant(
         .from("combatants")
         .delete()
         .eq("id", combatantId)
+
+    return error
+}
+
+export async function removeShadowCombatants() {
+    const { error } = await supabase
+        .from("combatants")
+        .delete()
+        .eq("combatant_type", "shadow")
 
     return error
 }
