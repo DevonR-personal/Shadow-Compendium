@@ -73,7 +73,7 @@ export default function GMPage({
         useState<Combatant | null>(null)
     const [selectedPlayer, setSelectedPlayer] =
         useState<Player | null>(null)
-    const [selectedPlayerDetails, setSelectedPlayerDetails] =
+    const [selectedPlayerSnapshot, setSelectedPlayerDetails] =
         useState<Player | null>(null)
     const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([])
     const [removingEnemies, setRemovingEnemies] = useState(false)
@@ -98,6 +98,10 @@ export default function GMPage({
         onCombatLootChange,
         onTurnHighlightsChange,
     })
+    const selectedPlayerDetails = selectedPlayerSnapshot
+        ? players.find((player) => player.id === selectedPlayerSnapshot.id) ??
+            selectedPlayerSnapshot
+        : null
 
     const addLogEntry = useCallback((kind: CombatLogEntry["kind"], text: string) => {
         setCombatLog((entries) => appendCombatLogEntry(entries, {
@@ -123,26 +127,43 @@ export default function GMPage({
         setSideTab("details")
     }, [])
 
-    // Keeps the details data fresh; only a different current combatant changes the tab.
-    const handleCurrentShadowSynced = useCallback((shadow: Shadow, combatant: Combatant) => {
-        setSelectedShadow(shadow)
-        setSelectedPlayerDetails(null)
-        setSelectedCombatant(combatant)
-        if (syncedCombatantIdRef.current !== combatant.id) {
-            syncedCombatantIdRef.current = combatant.id
-            setSideTab("details")
-        }
-    }, [])
+    const handleCombatantsSynced = useCallback((combatants: Combatant[]) => {
+        setSelectedCombatant((selected) =>
+            selected ? combatants.find((combatant) => combatant.id === selected.id) ?? null : null
+        )
 
-    const handleCurrentPlayerSynced = useCallback((player: Player, combatant: Combatant) => {
-        setSelectedShadow(null)
-        setSelectedPlayerDetails(player)
-        setSelectedCombatant(combatant)
-        if (syncedCombatantIdRef.current !== combatant.id) {
-            syncedCombatantIdRef.current = combatant.id
-            setSideTab("details")
+        const current = combatants.find((combatant) => combatant.is_current_turn)
+        if (!current) {
+            syncedCombatantIdRef.current = null
+            return
         }
-    }, [])
+
+        if (syncedCombatantIdRef.current === current.id) {
+            return
+        }
+
+        if (current.combatant_type === "shadow" && current.shadow_id !== null) {
+            const shadow = shadows.find((item) => item.id === current.shadow_id)
+            if (!shadow) return
+
+            syncedCombatantIdRef.current = current.id
+            setSelectedShadow(shadow)
+            setSelectedPlayerDetails(null)
+            setSelectedCombatant(current)
+            setSideTab("details")
+        } else if (current.player_id !== null) {
+            const player = players.find((item) => item.id === current.player_id)
+            if (!player) return
+
+            syncedCombatantIdRef.current = current.id
+            if (!player.is_player) {
+                setSelectedShadow(null)
+                setSelectedPlayerDetails(player)
+                setSelectedCombatant(current)
+                setSideTab("details")
+            }
+        }
+    }, [players, shadows])
 
     async function handleBeginCombat() {
         await beginCombat()
@@ -324,9 +345,8 @@ export default function GMPage({
                         playerView={false}
                         onRefreshShadows={onRefreshShadows}
                         onSelectShadow={handleShadowClicked}
-                        onSyncSelectedShadow={handleCurrentShadowSynced}
+                        onSyncCombatants={handleCombatantsSynced}
                         onSelectPlayer={handlePlayerClicked}
-                        onSyncSelectedPlayer={handleCurrentPlayerSynced}
                         onDamageLogged={logDamage}
                         lootYen={combatLoot.yen}
                         lootItems={combatLoot.items}

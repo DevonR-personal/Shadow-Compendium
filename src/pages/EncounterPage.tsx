@@ -47,9 +47,8 @@ type EncounterPageProps = Readonly<{
     playerView: boolean
     onRefreshShadows: () => Promise<void>
     onSelectShadow: (shadow: Shadow, combatant?: Combatant) => void
-    onSyncSelectedShadow?: (shadow: Shadow, combatant: Combatant) => void
+    onSyncCombatants?: (combatants: Combatant[]) => void
     onSelectPlayer?: (player: Player, combatant: Combatant) => void
-    onSyncSelectedPlayer?: (player: Player, combatant: Combatant) => void
     onDamageLogged?: (text: string) => void
     lootYen: number
     lootItems: string[]
@@ -68,9 +67,8 @@ export default function EncounterPage({
     playerView,
     onRefreshShadows,
     onSelectShadow,
-    onSyncSelectedShadow,
+    onSyncCombatants,
     onSelectPlayer,
-    onSyncSelectedPlayer,
     onDamageLogged,
     lootYen,
     lootItems,
@@ -299,40 +297,8 @@ export default function EncounterPage({
     }, [receiveCombatNotice])
 
     useEffect(() => {
-        const currentCombatant =
-            combatants.find(
-                (combatant) =>
-                    combatant.is_current_turn
-            )
-
-        if (!currentCombatant) {
-            return
-        }
-
-        if (
-            currentCombatant.combatant_type === "shadow" &&
-            currentCombatant.shadow_id !== null
-        ) {
-            const shadow = shadows.find(
-                (item) => item.id === currentCombatant.shadow_id
-            )
-
-            if (shadow) {
-                onSyncSelectedShadow?.(shadow, currentCombatant)
-            }
-            return
-        }
-
-        if (currentCombatant.player_id !== null) {
-            const player = players.find(
-                (item) => item.id === currentCombatant.player_id
-            )
-
-            if (player && !player.is_player) {
-                onSyncSelectedPlayer?.(player, currentCombatant)
-            }
-        }
-    }, [combatants, players, shadows, onSyncSelectedPlayer, onSyncSelectedShadow])
+        onSyncCombatants?.(combatants)
+    }, [combatants, onSyncCombatants])
 
     async function handleRemoveCombatant(
         id: number
